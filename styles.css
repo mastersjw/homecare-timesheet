@@ -1,0 +1,664 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Times New Roman', Times, serif;
+    background-color: #f0f0f0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 850px;
+    margin: 0 auto;
+}
+
+.header-buttons {
+    background-color: white;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.btn {
+    padding: 10px 20px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    color: #333;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.btn:hover {
+    background-color: #f0f0f0;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.btn-clock {
+    background-color: #28a745;
+    color: white;
+    border-color: #28a745;
+    font-weight: bold;
+}
+
+.btn-clock:hover:not(:disabled) {
+    background-color: #218838;
+}
+
+.btn-clock:disabled {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.button-separator {
+    width: 1px;
+    background-color: #ccc;
+    margin: 0 10px;
+}
+
+.button-spacer {
+    flex-grow: 1;
+}
+
+.timesheet {
+    background-color: white;
+    padding: 50px 60px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Logo Styling */
+.logo-container {
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+.logo-image {
+    max-width: 250px;
+    height: auto;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 10px;
+    margin-top: 0;
+    font-size: 16px;
+    font-weight: normal;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+.header-info {
+    margin-bottom: 20px;
+}
+
+.form-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.form-group:last-child {
+    margin-bottom: 0;
+}
+
+.form-group label {
+    min-width: 100px;
+    font-size: 14px;
+}
+
+.name-field {
+    border: none;
+    border-bottom: 1px solid #000;
+    border-radius: 0;
+    padding: 2px 5px;
+    font-size: 14px;
+    font-family: 'Times New Roman', Times, serif;
+    flex: 1;
+}
+
+.name-field:focus,
+.period-field:focus {
+    outline: none;
+    border-bottom: 2px solid #1e3a8a;
+}
+
+.period-field {
+    border: 1px solid #000;
+    border-radius: 3px;
+    padding: 3px 6px;
+    font-size: 14px;
+    font-family: 'Times New Roman', Times, serif;
+    flex: 1;
+    background-color: white;
+    cursor: pointer;
+}
+
+select.period-field {
+    appearance: auto;
+}
+
+/* Main Timecard Table */
+.timecard-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+    border: 1px solid #000;
+}
+
+.timecard-table th {
+    border: 1px solid #000;
+    padding: 4px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 13px;
+    background-color: white;
+}
+
+.timecard-table td {
+    border: 1px solid #000;
+    padding: 3px;
+    vertical-align: middle;
+}
+
+.timecard-table input[type="date"],
+.timecard-table input[type="text"],
+.timecard-table input[type="number"],
+.timecard-table input[type="time"] {
+    width: 100%;
+    padding: 2px;
+    border: none;
+    font-size: 13px;
+    font-family: 'Times New Roman', Times, serif;
+    background-color: transparent;
+}
+
+.timecard-table input[type="number"] {
+    text-align: center;
+}
+
+.timecard-table input[readonly] {
+    background-color: #f9f9f9;
+    cursor: default;
+}
+
+.timecard-table input:focus:not([readonly]) {
+    outline: 1px solid #1e3a8a;
+}
+
+/* Time entry pairs styling */
+.time-entries-cell {
+    padding: 3px !important;
+}
+
+/* Day type dropdown */
+.day-type-select {
+    width: 100%;
+    padding: 2px 4px;
+    margin-bottom: 3px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-size: 12px;
+    font-family: 'Times New Roman', Times, serif;
+    background-color: white;
+}
+
+.day-type-select:focus {
+    outline: 1px solid #1e3a8a;
+    border-color: #1e3a8a;
+}
+
+/* Special day display */
+.special-day-display {
+    margin-top: 2px;
+    font-size: 12px;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+.holiday-text {
+    color: #0066cc;
+    font-weight: bold;
+}
+
+.called-off-text {
+    color: #cc0000;
+    font-style: italic;
+}
+
+.office-closed-note {
+    color: #666;
+    font-size: 12px;
+    font-style: italic;
+}
+
+.on-call-note {
+    color: #666;
+    font-size: 12px;
+    font-style: italic;
+}
+
+.time-entries-container {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 3px;
+}
+
+.time-entry-pair {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.time-entry-pair input[type="time"] {
+    width: auto;
+    padding: 2px 4px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+.time-entry-pair input[type="time"]:focus {
+    outline: 1px solid #1e3a8a;
+    border-color: #1e3a8a;
+}
+
+.time-separator {
+    color: #666;
+    font-weight: bold;
+}
+
+.remove-time-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    width: 22px;
+    height: 22px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.remove-time-btn:hover {
+    background-color: #c82333;
+}
+
+.button-row {
+    display: flex;
+    gap: 5px;
+    margin-top: 3px;
+}
+
+.add-time-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 2px 6px;
+    cursor: pointer;
+    font-size: 11px;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+.add-time-btn:hover {
+    background-color: #218838;
+}
+
+.add-hours-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 2px 6px;
+    cursor: pointer;
+    font-size: 11px;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+.add-hours-btn:hover {
+    background-color: #0056b3;
+}
+
+/* Hours entry styling */
+.hours-entry {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    margin-bottom: 2px;
+}
+
+.hours-amount {
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
+    padding: 4px 6px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-size: 12px;
+    font-family: 'Times New Roman', Times, serif;
+    box-sizing: border-box;
+    background-color: white;
+}
+
+.hours-amount:focus {
+    outline: none;
+    border: 2px solid #007bff;
+    padding: 3px 5px;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.hours-description {
+    flex: 1;
+    min-width: 100px;
+    padding: 4px 6px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-size: 12px;
+    font-family: 'Times New Roman', Times, serif;
+    box-sizing: border-box;
+    background-color: white;
+}
+
+.hours-description:focus {
+    outline: none;
+    border: 2px solid #007bff;
+    padding: 3px 5px;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.remove-hours-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 1px 6px;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    font-weight: bold;
+}
+
+.remove-hours-btn:hover {
+    background-color: #c82333;
+}
+
+/* Total rows styling */
+.total-row td {
+    font-weight: bold;
+    text-align: right;
+    padding-right: 15px;
+}
+
+.total-row .total-value {
+    text-align: center;
+    padding-right: 8px;
+}
+
+.summary-row td {
+    font-weight: bold;
+    text-align: right;
+    padding-right: 15px;
+}
+
+.summary-row .summary-value {
+    text-align: center;
+    padding-right: 8px;
+}
+
+#personalLeave {
+    font-size: 16px !important;
+    font-family: 'Times New Roman', Times, serif !important;
+}
+
+/* Signature Section */
+.signature-section {
+    margin-top: 30px;
+}
+
+.signature-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.signature-row span {
+    min-width: 200px;
+    font-size: 13px;
+}
+
+.signature-line {
+    flex: 1;
+    border-bottom: 1px solid #000;
+    height: 25px;
+}
+
+/* Print-specific styles for pay period */
+.period-field-print {
+    display: none;
+    border: none;
+    border-bottom: 1px solid #000;
+    border-radius: 0;
+    padding: 2px 5px;
+    font-size: 13px;
+    font-family: 'Times New Roman', Times, serif;
+    flex: 1;
+    background: transparent;
+}
+
+/* Print display for time entries */
+.time-entries-print {
+    display: none;
+    font-size: 13px;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+/* Print mode styles for PDF export */
+body.print-mode {
+    background-color: white;
+    padding: 0;
+    margin: 0;
+}
+
+body.print-mode .header-buttons {
+    display: none;
+}
+
+body.print-mode .timesheet {
+    box-shadow: none;
+    padding: 10px 30px;
+}
+
+body.print-mode .logo-container {
+    margin-bottom: 2px;
+}
+
+body.print-mode .logo-image {
+    max-width: 200px;
+}
+
+body.print-mode h1 {
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+body.print-mode .header-info {
+    margin-bottom: 20px;
+}
+
+body.print-mode .form-group {
+    margin-bottom: 8px;
+}
+
+body.print-mode .timecard-table {
+    margin-bottom: 20px;
+}
+
+body.print-mode .signature-section {
+    margin-top: 15px;
+}
+
+body.print-mode .signature-row {
+    margin-bottom: 8px;
+}
+
+body.print-mode select.period-field {
+    display: none;
+}
+
+body.print-mode .period-field-print {
+    display: block;
+    border: none;
+    border-bottom: 1px solid #000;
+}
+
+body.print-mode .time-entries-container {
+    display: none;
+}
+
+body.print-mode .add-time-btn {
+    display: none;
+}
+
+body.print-mode .add-hours-btn {
+    display: none;
+}
+
+body.print-mode .button-row {
+    display: none;
+}
+
+body.print-mode .hours-entry {
+    display: none;
+}
+
+body.print-mode .day-type-select {
+    display: none;
+}
+
+body.print-mode .special-day-display {
+    display: none !important;
+}
+
+body.print-mode .time-entries-print {
+    display: block;
+}
+
+/* Print media styles */
+@media print {
+    body {
+        background-color: white;
+        padding: 0;
+        margin: 0;
+    }
+
+    .header-buttons {
+        display: none;
+    }
+
+    .timesheet {
+        box-shadow: none;
+        padding: 10px 30px;
+    }
+
+    .logo-container {
+        margin-bottom: 2px;
+    }
+
+    .logo-image {
+        max-width: 200px;
+    }
+
+    h1 {
+        margin-bottom: 5px;
+        font-size: 14px;
+    }
+
+    .header-info {
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 8px;
+    }
+
+    .timecard-table {
+        margin-bottom: 20px;
+    }
+
+    .signature-section {
+        margin-top: 15px;
+    }
+
+    .signature-row {
+        margin-bottom: 8px;
+    }
+
+    select.period-field {
+        display: none;
+    }
+
+    .period-field-print {
+        display: block;
+        border: none;
+        border-bottom: 1px solid #000;
+    }
+
+    .time-entries-container {
+        display: none;
+    }
+
+    .add-time-btn {
+        display: none;
+    }
+
+    .add-hours-btn {
+        display: none;
+    }
+
+    .button-row {
+        display: none;
+    }
+
+    .hours-entry {
+        display: none;
+    }
+
+    .day-type-select {
+        display: none;
+    }
+
+    .special-day-display {
+        display: none !important;
+    }
+
+    .time-entries-print {
+        display: block;
+    }
+
+    @page {
+        size: A4;
+        margin: 0.5cm;
+    }
+}

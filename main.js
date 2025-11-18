@@ -1,0 +1,256 @@
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const path = require('path');
+const fs = require('fs');
+
+let mainWindow;
+let settingsWindow = null;
+
+function createWindow() {
+  mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 900,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
+    }
+  });
+
+  mainWindow.loadFile('index.html');
+
+  // Open DevTools in development
+  // mainWindow.webContents.openDevTools();
+}
+
+function createSettingsWindow() {
+  // Don't create multiple settings windows
+  if (settingsWindow) {
+    settingsWindow.focus();
+    return;
+  }
+
+  settingsWindow = new BrowserWindow({
+    width: 650,
+    height: 500,
+    parent: mainWindow,
+    modal: true,
+    resizable: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
+    }
+  });
+
+  settingsWindow.loadFile('settings.html');
+  settingsWindow.setMenuBarVisibility(false);
+
+  settingsWindow.on('closed', () => {
+    settingsWindow = null;
+  });
+}
+
+app.whenReady().then(createWindow);
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
+  }
+});
+
+// Get default save directory (user's AppData folder)
+const defaultSaveDir = app.getPath('userData');
+const timesheetDir = path.join(defaultSaveDir, 'saves');
+const settingsFile = path.join(defaultSaveDir, 'settings.json');
+
+// Create directory if it doesn't exist
+if (!fs.existsSync(timesheetDir)) {
+  fs.mkdirSync(timesheetDir, { recursive: true });
+}
+
+// IPC handlers
+ipcMain.handle('save-timesheet', async (event, data) => {
+  // Generate default filename from pay period
+  let defaultFilename = 'timesheet.json';
+  if (data.payPeriod) {
+    defaultFilename = `timesheet-${data.payPeriod.replace(/\//g, '-')}.json`;
+  }
+
+  const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+    title: 'Save Timesheet',
+    defaultPath: path.join(timesheetDir, defaultFilename),
+    filters: [
+      { name: 'JSON Files', extensions: ['json'] }
+    ]
+  });
+
+  if (!canceled && filePath) {
+    try {
+      fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+      return { success: true, filePath };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+  return { success: false, canceled: true };
+});
+
+ipcMain.handle('check-timesheet-exists', async (event, payPeriod) => {
+  // Use template.json for Template, otherwise use the pay period
+  const filename = payPeriod === 'Template' ? 'template.json' : `timesheet-${payPeriod.replace(/\//g, '-')}.json`;
+  const filePath = path.join(timesheetDir, filename);
+
+  try {
+    if (fs.existsSync(filePath)) {
+      const data = fs.readFileSync(filePath, 'utf8');
+      return { exists: true, data: JSON.parse(data), filePath };
+    }
+  } catch (error) {
+    // File doesn't exist or can't be read
+  }
+  return { exists: false };
+});
+
+// Auto-save without dialog
+ipcMain.handle('auto-save-timesheet', async (event, data) => {
+  if (!data.payPeriod) {
+    return { success: false, error: 'No pay period selected' };
+  }
+
+  // Use template.json for Template, otherwise use the pay period
+  const filename = data.payPeriod === 'Template' ? 'template.json' : `timesheet-${data.payPeriod.replace(/\//g, '-')}.json`;
+  const filePath = path.join(timesheetDir, filename);
+
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+    return { success: true, filePath };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('load-timesheet', async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+    title: 'Load Timesheet',
+    defaultPath: timesheetDir,
+    filters: [
+      { name: 'JSON Files', extensions: ['json'] }
+    ],
+    properties: ['openFile']
+  });
+
+  if (!canceled && filePaths.length > 0) {
+    try {
+      const data = fs.readFileSync(filePaths[0], 'utf8');
+      return { success: true, data: JSON.parse(data) };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+  return { success: false, canceled: true };
+});
+
+ipcMain.handle('export-pdf', async (event, pdfData) => {
+  const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+    title: 'Export to PDF',
+    defaultPath: `timesheet-${new Date().toISOString().split('T')[0]}.pdf`,
+    filters: [
+      { name: 'PDF Files', extensions: ['pdf'] }
+    ]
+  });
+
+  if (!canceled && filePath) {
+    try {
+      const base64Data = pdfData.split(',')[1];
+      const buffer = Buffer.from(base64Data, 'base64');
+      fs.writeFileSync(filePath, buffer);
+      return { success: true, filePath };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+  return { success: false, canceled: true };
+});
+
+// Save employee name to settings file
+ipcMain.handle('save-employee-name', async (event, name) => {
+  try {
+    const settings = { employeeName: name };
+    fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2));
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Load employee name from settings file
+ipcMain.handle('load-employee-name', async () => {
+  try {
+    if (fs.existsSync(settingsFile)) {
+      const data = fs.readFileSync(settingsFile, 'utf8');
+      const settings = JSON.parse(data);
+      return { success: true, name: settings.employeeName || '' };
+    }
+    return { success: true, name: '' };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Open settings window
+ipcMain.handle('open-settings', () => {
+  createSettingsWindow();
+  return { success: true };
+});
+
+// Close settings window
+ipcMain.handle('close-settings', () => {
+  if (settingsWindow) {
+    settingsWindow.close();
+  }
+  return { success: true };
+});
+
+// Save settings
+ipcMain.handle('save-settings', async (event, settings) => {
+  try {
+    fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2));
+
+    // Notify main window that settings have changed
+    if (mainWindow) {
+      mainWindow.webContents.send('settings-updated', settings);
+    }
+
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Load settings
+ipcMain.handle('load-settings', async () => {
+  try {
+    if (fs.existsSync(settingsFile)) {
+      const data = fs.readFileSync(settingsFile, 'utf8');
+      const settings = JSON.parse(data);
+      return { success: true, settings };
+    }
+    // Return default settings if file doesn't exist
+    return {
+      success: true,
+      settings: {
+        employeeName: '',
+        autoFillFromTemplate: false,
+        showAddHoursButton: false
+      }
+    };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
