@@ -46,6 +46,8 @@
       "index.html",
       "styles.css",
       "preload.js",
+      "settings.html",
+      "settings.js",
       "Logo.png"
     ]
   }
