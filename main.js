@@ -178,31 +178,6 @@ ipcMain.handle('export-pdf', async (event, pdfData) => {
   return { success: false, canceled: true };
 });
 
-// Save employee name to settings file
-ipcMain.handle('save-employee-name', async (event, name) => {
-  try {
-    const settings = { employeeName: name };
-    fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2));
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
-// Load employee name from settings file
-ipcMain.handle('load-employee-name', async () => {
-  try {
-    if (fs.existsSync(settingsFile)) {
-      const data = fs.readFileSync(settingsFile, 'utf8');
-      const settings = JSON.parse(data);
-      return { success: true, name: settings.employeeName || '' };
-    }
-    return { success: true, name: '' };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
 // Open settings window
 ipcMain.handle('open-settings', () => {
   createSettingsWindow();

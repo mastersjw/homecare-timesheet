@@ -6,8 +6,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadTimesheet: () => ipcRenderer.invoke('load-timesheet'),
   exportPDF: (pdfData) => ipcRenderer.invoke('export-pdf', pdfData),
   checkTimesheetExists: (payPeriod) => ipcRenderer.invoke('check-timesheet-exists', payPeriod),
-  saveEmployeeName: (name) => ipcRenderer.invoke('save-employee-name', name),
-  loadEmployeeName: () => ipcRenderer.invoke('load-employee-name'),
   openSettings: () => ipcRenderer.invoke('open-settings'),
   closeSettings: () => ipcRenderer.invoke('close-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
