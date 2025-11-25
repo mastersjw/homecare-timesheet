@@ -98,7 +98,8 @@ autoUpdater.on('error', (err) => {
 });
 
 autoUpdater.on('download-progress', (progressObj) => {
-  console.log(`Download speed: ${progressObj.bytesPerSecond} - Downloaded ${progressObj.percent}%`);
+  const logMsg = `Download progress - ${Math.round(progressObj.percent)}% (${progressObj.transferred}/${progressObj.total} bytes) - Speed: ${Math.round(progressObj.bytesPerSecond / 1024)} KB/s`;
+  console.log(logMsg);
   // Send progress to renderer
   if (mainWindow) {
     mainWindow.webContents.send('update-download-progress', progressObj);
@@ -282,9 +283,12 @@ ipcMain.handle('load-settings', async () => {
 // Auto-updater IPC handlers
 ipcMain.handle('download-update', async () => {
   try {
-    await autoUpdater.downloadUpdate();
+    console.log('Starting update download...');
+    const result = await autoUpdater.downloadUpdate();
+    console.log('Download started successfully:', result);
     return { success: true };
   } catch (error) {
+    console.error('Download update error:', error);
     return { success: false, error: error.message };
   }
 });
@@ -292,4 +296,34 @@ ipcMain.handle('download-update', async () => {
 ipcMain.handle('install-update', () => {
   autoUpdater.quitAndInstall();
   return { success: true };
+});
+
+// Get app version
+ipcMain.handle('get-app-version', () => {
+  return app.getVersion();
+});
+
+// Manual update check with detailed logging
+ipcMain.handle('check-for-updates-manual', async () => {
+  try {
+    console.log('Manual update check triggered');
+    console.log('Current version:', app.getVersion());
+    console.log('Update feed URL:', autoUpdater.getFeedURL());
+
+    const result = await autoUpdater.checkForUpdates();
+    console.log('Update check result:', result);
+
+    return {
+      success: true,
+      currentVersion: app.getVersion(),
+      updateInfo: result ? result.updateInfo : null
+    };
+  } catch (error) {
+    console.error('Error checking for updates:', error);
+    return {
+      success: false,
+      error: error.message,
+      currentVersion: app.getVersion()
+    };
+  }
 });

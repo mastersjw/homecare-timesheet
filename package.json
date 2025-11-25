@@ -27,6 +27,7 @@
   "build": {
     "appId": "com.homecare.timesheet",
     "productName": "Homecare Timesheet",
+    "artifactName": "Homecare-Timesheet-Setup-${version}.${ext}",
     "win": {
       "target": [
         {

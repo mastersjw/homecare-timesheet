@@ -1677,13 +1677,18 @@ if (typeof window.electronAPI !== 'undefined') {
     downloadUpdateBtn.addEventListener('click', async () => {
         downloadUpdateBtn.disabled = true;
         downloadUpdateBtn.textContent = 'Downloading...';
+        console.log('Download button clicked, starting download...');
         try {
-            await window.electronAPI.downloadUpdate();
+            const result = await window.electronAPI.downloadUpdate();
+            console.log('Download update result:', result);
+            if (!result.success) {
+                throw new Error(result.error || 'Download failed');
+            }
         } catch (error) {
             console.error('Error downloading update:', error);
             downloadUpdateBtn.disabled = false;
             downloadUpdateBtn.textContent = 'Download Update';
-            alert('Failed to download update. Please try again later.');
+            alert('Failed to download update: ' + error.message);
         }
     });
 
