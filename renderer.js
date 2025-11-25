@@ -1637,3 +1637,70 @@ populatePayPeriodDropdown();
 calculateTotals();
 loadEmployeeName();
 updateAddHoursButtonVisibility();
+
+// Auto-update functionality
+if (typeof window.electronAPI !== 'undefined') {
+    const updateNotification = document.getElementById('updateNotification');
+    const updateMessage = document.getElementById('updateMessage');
+    const downloadUpdateBtn = document.getElementById('downloadUpdateBtn');
+    const installUpdateBtn = document.getElementById('installUpdateBtn');
+    const laterBtn = document.getElementById('laterBtn');
+    const updateProgress = document.getElementById('updateProgress');
+    const progressBarFill = document.getElementById('progressBarFill');
+    const progressText = document.getElementById('progressText');
+
+    // Listen for update available
+    window.electronAPI.onUpdateAvailable((info) => {
+        console.log('Update available:', info);
+        updateMessage.textContent = `A new version (${info.version}) is available. Would you like to download it?`;
+        updateNotification.style.display = 'flex';
+    });
+
+    // Listen for download progress
+    window.electronAPI.onUpdateDownloadProgress((progress) => {
+        console.log('Download progress:', progress.percent);
+        updateProgress.style.display = 'block';
+        progressBarFill.style.width = `${progress.percent}%`;
+        progressText.textContent = `Downloading update... ${Math.round(progress.percent)}%`;
+    });
+
+    // Listen for update downloaded
+    window.electronAPI.onUpdateDownloaded((info) => {
+        console.log('Update downloaded:', info);
+        updateProgress.style.display = 'none';
+        updateMessage.textContent = `Version ${info.version} has been downloaded. Click "Install and Restart" to apply the update.`;
+        downloadUpdateBtn.style.display = 'none';
+        installUpdateBtn.style.display = 'inline-block';
+    });
+
+    // Download update button click
+    downloadUpdateBtn.addEventListener('click', async () => {
+        downloadUpdateBtn.disabled = true;
+        downloadUpdateBtn.textContent = 'Downloading...';
+        try {
+            await window.electronAPI.downloadUpdate();
+        } catch (error) {
+            console.error('Error downloading update:', error);
+            downloadUpdateBtn.disabled = false;
+            downloadUpdateBtn.textContent = 'Download Update';
+            alert('Failed to download update. Please try again later.');
+        }
+    });
+
+    // Install update button click
+    installUpdateBtn.addEventListener('click', async () => {
+        await window.electronAPI.installUpdate();
+    });
+
+    // Later button click
+    laterBtn.addEventListener('click', () => {
+        updateNotification.style.display = 'none';
+        // Reset UI state
+        downloadUpdateBtn.style.display = 'inline-block';
+        downloadUpdateBtn.disabled = false;
+        downloadUpdateBtn.textContent = 'Download Update';
+        installUpdateBtn.style.display = 'none';
+        updateProgress.style.display = 'none';
+        progressBarFill.style.width = '0%';
+    });
+}

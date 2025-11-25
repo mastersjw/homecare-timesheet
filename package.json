@@ -20,6 +20,7 @@
     "electron-builder": "^24.9.1"
   },
   "dependencies": {
+    "electron-updater": "^6.6.2",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.3"
   },
@@ -30,9 +31,12 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
-      ]
+      ],
+      "sign": null
     },
     "nsis": {
       "oneClick": false,
@@ -49,6 +53,13 @@
       "settings.html",
       "settings.js",
       "Logo.png"
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "mastersjw",
+        "repo": "homecare-timesheet"
+      }
     ]
   }
 }

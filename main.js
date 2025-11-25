@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { autoUpdater } = require('electron-updater');
 
 let mainWindow;
 let settingsWindow = null;
@@ -50,7 +51,18 @@ function createSettingsWindow() {
   });
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+
+  // Check for updates after the window is created
+  // Don't auto-download, let the user decide
+  autoUpdater.autoDownload = false;
+
+  // Check for updates when app starts (with a small delay to ensure UI is ready)
+  setTimeout(() => {
+    autoUpdater.checkForUpdates();
+  }, 3000);
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -61,6 +73,43 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
+  }
+});
+
+// Auto-updater event handlers
+autoUpdater.on('checking-for-update', () => {
+  console.log('Checking for updates...');
+});
+
+autoUpdater.on('update-available', (info) => {
+  console.log('Update available:', info.version);
+  // Send update info to renderer
+  if (mainWindow) {
+    mainWindow.webContents.send('update-available', info);
+  }
+});
+
+autoUpdater.on('update-not-available', (info) => {
+  console.log('No updates available');
+});
+
+autoUpdater.on('error', (err) => {
+  console.error('Error in auto-updater:', err);
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+  console.log(`Download speed: ${progressObj.bytesPerSecond} - Downloaded ${progressObj.percent}%`);
+  // Send progress to renderer
+  if (mainWindow) {
+    mainWindow.webContents.send('update-download-progress', progressObj);
+  }
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  console.log('Update downloaded:', info.version);
+  // Send download complete notification to renderer
+  if (mainWindow) {
+    mainWindow.webContents.send('update-downloaded', info);
   }
 });
 
@@ -228,4 +277,19 @@ ipcMain.handle('load-settings', async () => {
   } catch (error) {
     return { success: false, error: error.message };
   }
+});
+
+// Auto-updater IPC handlers
+ipcMain.handle('download-update', async () => {
+  try {
+    await autoUpdater.downloadUpdate();
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('install-update', () => {
+  autoUpdater.quitAndInstall();
+  return { success: true };
 });
