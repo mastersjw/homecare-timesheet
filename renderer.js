@@ -702,7 +702,7 @@ function calculateHoursFromRange(timeRange) {
 }
 
 // Calculate totals
-function calculateTotals() {
+async function calculateTotals() {
     let week1Total = 0;
     let week2Total = 0;
     let week1HolidayHours = 0;
@@ -740,26 +740,47 @@ function calculateTotals() {
         }
     }
 
-    // Calculate regular (non-holiday) hours for each week
-    const week1RegularHours = week1Total - week1HolidayHours;
-    const week2RegularHours = week2Total - week2HolidayHours;
+    // Check if salary mode is enabled
+    let salaryMode = false;
+    if (typeof window.electronAPI !== 'undefined') {
+        try {
+            const result = await window.electronAPI.loadSettings();
+            if (result.success && result.settings) {
+                salaryMode = result.settings.salaryMode || false;
+            }
+        } catch (error) {
+            console.error('Error loading settings for salary mode:', error);
+        }
+    }
 
-    // Calculate overtime (any hours over 40 per week, excluding holiday hours)
-    const week1Overtime = Math.max(0, week1RegularHours - REGULAR_HOURS_PER_WEEK);
-    const week2Overtime = Math.max(0, week2RegularHours - REGULAR_HOURS_PER_WEEK);
-    const totalOvertime = week1Overtime + week2Overtime;
+    let totalHours, totalOvertime;
 
-    // Total Hours for 2 Weeks = holiday hours + non-overtime regular hours
-    // Week 1: holiday hours + min(regular hours, 40)
-    // Week 2: holiday hours + min(regular hours, 40)
-    const week1NonOvertimeRegular = Math.min(week1RegularHours, REGULAR_HOURS_PER_WEEK);
-    const week2NonOvertimeRegular = Math.min(week2RegularHours, REGULAR_HOURS_PER_WEEK);
-    const totalNonOvertimeHours = week1HolidayHours + week1NonOvertimeRegular + week2HolidayHours + week2NonOvertimeRegular;
+    if (salaryMode) {
+        // Salary mode: Just add all hours together
+        totalHours = week1Total + week2Total;
+        totalOvertime = 0;
+    } else {
+        // Regular mode: Calculate regular (non-holiday) hours for each week
+        const week1RegularHours = week1Total - week1HolidayHours;
+        const week2RegularHours = week2Total - week2HolidayHours;
+
+        // Calculate overtime (any hours over 40 per week, excluding holiday hours)
+        const week1Overtime = Math.max(0, week1RegularHours - REGULAR_HOURS_PER_WEEK);
+        const week2Overtime = Math.max(0, week2RegularHours - REGULAR_HOURS_PER_WEEK);
+        totalOvertime = week1Overtime + week2Overtime;
+
+        // Total Hours for 2 Weeks = holiday hours + non-overtime regular hours
+        // Week 1: holiday hours + min(regular hours, 40)
+        // Week 2: holiday hours + min(regular hours, 40)
+        const week1NonOvertimeRegular = Math.min(week1RegularHours, REGULAR_HOURS_PER_WEEK);
+        const week2NonOvertimeRegular = Math.min(week2RegularHours, REGULAR_HOURS_PER_WEEK);
+        totalHours = week1HolidayHours + week1NonOvertimeRegular + week2HolidayHours + week2NonOvertimeRegular;
+    }
 
     // Update display
     document.getElementById('week1Total').textContent = week1Total.toFixed(2);
     document.getElementById('week2Total').textContent = week2Total.toFixed(2);
-    document.getElementById('totalHours').textContent = totalNonOvertimeHours.toFixed(2);
+    document.getElementById('totalHours').textContent = totalHours.toFixed(2);
     document.getElementById('overtime').textContent = totalOvertime.toFixed(2);
 }
 
@@ -1619,6 +1640,32 @@ async function updateAddHoursButtonVisibility() {
     }
 }
 
+// Update salary mode display
+async function updateSalaryModeDisplay() {
+    if (typeof window.electronAPI !== 'undefined') {
+        try {
+            const result = await window.electronAPI.loadSettings();
+            if (result.success && result.settings) {
+                const salaryMode = result.settings.salaryMode || false;
+
+                // Show/hide salary mode banner
+                const banner = document.getElementById('salaryModeBanner');
+                if (banner) {
+                    banner.style.display = salaryMode ? 'block' : 'none';
+                }
+
+                // Show/hide overtime row
+                const overtimeRow = document.querySelector('.summary-row:has(#overtime)');
+                if (overtimeRow) {
+                    overtimeRow.style.display = salaryMode ? 'none' : '';
+                }
+            }
+        } catch (error) {
+            console.error('Error loading settings for salary mode:', error);
+        }
+    }
+}
+
 // Listen for settings updates
 if (typeof window.electronAPI !== 'undefined') {
     window.electronAPI.onSettingsUpdated((settings) => {
@@ -1627,6 +1674,8 @@ if (typeof window.electronAPI !== 'undefined') {
         }
         // Update Add Hours button visibility
         updateAddHoursButtonVisibility();
+        // Update salary mode display
+        updateSalaryModeDisplay();
     });
 }
 
@@ -1637,6 +1686,7 @@ populatePayPeriodDropdown();
 calculateTotals();
 loadEmployeeName();
 updateAddHoursButtonVisibility();
+updateSalaryModeDisplay();
 
 // Auto-update functionality
 if (typeof window.electronAPI !== 'undefined') {

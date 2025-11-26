@@ -20,6 +20,11 @@ async function loadSettings() {
                 if (result.settings.showAddHoursButton !== undefined) {
                     document.getElementById('showAddHoursButton').checked = result.settings.showAddHoursButton;
                 }
+
+                // Load salary mode checkbox
+                if (result.settings.salaryMode !== undefined) {
+                    document.getElementById('salaryMode').checked = result.settings.salaryMode;
+                }
             }
         } catch (error) {
             console.error('Error loading settings:', error);
@@ -32,7 +37,8 @@ async function saveSettings() {
     const settings = {
         employeeName: document.getElementById('employeeName').value,
         autoFillFromTemplate: document.getElementById('autoFillFromTemplate').checked,
-        showAddHoursButton: document.getElementById('showAddHoursButton').checked
+        showAddHoursButton: document.getElementById('showAddHoursButton').checked,
+        salaryMode: document.getElementById('salaryMode').checked
     };
 
     if (typeof window.electronAPI !== 'undefined') {

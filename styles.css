@@ -78,6 +78,21 @@ body {
     flex-grow: 1;
 }
 
+.salary-mode-banner {
+    background-color: #ff6b6b;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 16px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
 .timesheet {
     background-color: white;
     padding: 50px 60px;
@@ -485,6 +500,10 @@ body.print-mode .header-buttons {
     display: none;
 }
 
+body.print-mode .salary-mode-banner {
+    display: none;
+}
+
 body.print-mode .timesheet {
     box-shadow: none;
     padding: 10px 30px;
@@ -574,6 +593,10 @@ body.print-mode .time-entries-print {
     }
 
     .header-buttons {
+        display: none;
+    }
+
+    .salary-mode-banner {
         display: none;
     }
 

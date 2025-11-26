@@ -272,7 +272,8 @@ ipcMain.handle('load-settings', async () => {
       settings: {
         employeeName: '',
         autoFillFromTemplate: false,
-        showAddHoursButton: false
+        showAddHoursButton: false,
+        salaryMode: false
       }
     };
   } catch (error) {
