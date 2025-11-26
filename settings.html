@@ -190,6 +190,37 @@
             </div>
         </div>
 
+        <div class="setting-section">
+            <h2>Server Connection</h2>
+            <div class="setting-item">
+                <div class="checkbox-container">
+                    <input type="checkbox" id="enableServerSubmission">
+                    <label for="enableServerSubmission">Enable Server Connections</label>
+                </div>
+                <div class="checkbox-description">
+                    When enabled, you can submit timesheets to supervisors for approval.
+                </div>
+            </div>
+            <div id="serverConnectionOptions" style="display: none; margin-top: 20px;">
+                <div class="setting-item">
+                    <label for="serverUrl">Server URL:</label>
+                    <input type="text" id="serverUrl" placeholder="http://192.168.68.113:3001">
+                    <div class="checkbox-description">
+                        Enter your timesheet server URL.
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="showSupervisorButton">
+                        <label for="showSupervisorButton">Show Supervisor Mode button</label>
+                    </div>
+                    <div class="checkbox-description">
+                        When enabled, shows the "Supervisor Mode" button to access supervisor features.
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="button-container">
             <button id="cancelBtn" class="btn btn-secondary">Cancel</button>
             <button id="saveBtn" class="btn btn-primary">Save</button>

@@ -5,6 +5,7 @@ const { autoUpdater } = require('electron-updater');
 
 let mainWindow;
 let settingsWindow = null;
+let supervisorWindow = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -48,6 +49,30 @@ function createSettingsWindow() {
 
   settingsWindow.on('closed', () => {
     settingsWindow = null;
+  });
+}
+
+function createSupervisorWindow() {
+  // Don't create multiple supervisor windows
+  if (supervisorWindow) {
+    supervisorWindow.focus();
+    return;
+  }
+
+  supervisorWindow = new BrowserWindow({
+    width: 1400,
+    height: 900,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
+    }
+  });
+
+  supervisorWindow.loadFile('supervisor.html');
+
+  supervisorWindow.on('closed', () => {
+    supervisorWindow = null;
   });
 }
 
@@ -234,10 +259,33 @@ ipcMain.handle('open-settings', () => {
   return { success: true };
 });
 
+// Open supervisor window
+ipcMain.handle('open-supervisor', () => {
+  createSupervisorWindow();
+  return { success: true };
+});
+
 // Close settings window
 ipcMain.handle('close-settings', () => {
   if (settingsWindow) {
     settingsWindow.close();
+  }
+  return { success: true };
+});
+
+// Close supervisor window
+ipcMain.handle('close-supervisor', () => {
+  if (supervisorWindow) {
+    supervisorWindow.close();
+  }
+  return { success: true };
+});
+
+// Focus supervisor window
+ipcMain.handle('focus-supervisor', () => {
+  if (supervisorWindow) {
+    supervisorWindow.focus();
+    supervisorWindow.restore(); // In case it's minimized
   }
   return { success: true };
 });
@@ -273,7 +321,9 @@ ipcMain.handle('load-settings', async () => {
         employeeName: '',
         autoFillFromTemplate: false,
         showAddHoursButton: false,
-        salaryMode: false
+        salaryMode: false,
+        serverUrl: 'http://192.168.68.113:3001',
+        enableServerSubmission: false
       }
     };
   } catch (error) {

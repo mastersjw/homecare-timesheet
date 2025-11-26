@@ -68,6 +68,27 @@ body {
     opacity: 0.6;
 }
 
+.btn-submit {
+    background-color: #17a2b8;
+    color: white;
+    border-color: #17a2b8;
+    font-weight: bold;
+}
+
+.btn-submit:hover {
+    background-color: #138496;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+    border-color: #6c757d;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
 .button-separator {
     width: 1px;
     background-color: #ccc;
@@ -449,7 +470,7 @@ select.period-field {
 
 /* Signature Section */
 .signature-section {
-    margin-top: 30px;
+    margin-top: 40px;
 }
 
 .signature-row {
@@ -463,10 +484,58 @@ select.period-field {
     font-size: 13px;
 }
 
+.signature-display {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.signature-image {
+    max-height: 60px;
+    max-width: 200px;
+    position: absolute;
+    left: 10px;
+    bottom: 0;
+}
+
 .signature-line {
     flex: 1;
     border-bottom: 1px solid #000;
     height: 25px;
+}
+
+.btn-sign {
+    margin-left: 15px;
+    padding: 6px 15px;
+    font-size: 12px;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+}
+
+.btn-sign:hover {
+    background-color: #5a6268;
+}
+
+.signature-date-input {
+    width: 100px;
+    margin-left: 10px;
+    padding: 4px 8px;
+    border: none;
+    border-bottom: 1px solid #000;
+    font-size: 13px;
+    font-family: 'Times New Roman', Times, serif;
+    background-color: transparent;
+}
+
+.signature-date-input:focus {
+    outline: none;
+    border-bottom: 2px solid #1e3a8a;
+}
+
+.no-print {
+    /* Will be hidden in print styles */
 }
 
 /* Print-specific styles for pay period */
@@ -584,6 +653,14 @@ body.print-mode .time-entries-print {
     display: block;
 }
 
+body.print-mode .no-print {
+    display: none !important;
+}
+
+body.print-mode .signature-date-input::placeholder {
+    color: transparent;
+}
+
 /* Print media styles */
 @media print {
     body {
@@ -598,6 +675,10 @@ body.print-mode .time-entries-print {
 
     .salary-mode-banner {
         display: none;
+    }
+
+    .no-print {
+        display: none !important;
     }
 
     .timesheet {
@@ -680,6 +761,10 @@ body.print-mode .time-entries-print {
         display: block;
     }
 
+    .signature-date-input::placeholder {
+        color: transparent;
+    }
+
     @page {
         size: A4;
         margin: 0.5cm;
@@ -742,4 +827,89 @@ body.print-mode .time-entries-print {
     background-color: #007bff;
     transition: width 0.3s ease;
     width: 0%;
+}
+
+/* Submit Modal */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.modal-content p {
+    margin-bottom: 20px;
+    color: #666;
+}
+
+.modal-content .form-group {
+    margin-bottom: 20px;
+}
+
+.modal-content .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #333;
+}
+
+.modal-content select.input-field,
+.modal-content textarea.input-field {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: 'Times New Roman', Times, serif;
+    box-sizing: border-box;
+}
+
+.modal-content textarea.input-field {
+    resize: vertical;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 25px;
+}
+
+/* Signature Modal */
+.signature-modal {
+    max-width: 550px;
+}
+
+.signature-pad-container {
+    border: 2px solid #333;
+    border-radius: 4px;
+    background-color: white;
+    margin: 20px 0;
+    cursor: crosshair;
+}
+
+#signaturePad {
+    display: block;
+    touch-action: none;
 }

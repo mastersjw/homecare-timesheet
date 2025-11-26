@@ -9,7 +9,9 @@ let timesheetData = {
     payPeriod: '',
     week1: [],
     week2: [],
-    personalLeave: 0
+    personalLeave: 0,
+    employeeSignature: null,
+    employeeSignatureDate: ''
 };
 
 // Track current pay period selection
@@ -1014,6 +1016,13 @@ function saveTimesheetData() {
     // Store the selected pay period label (for filename)
     const payPeriodDisplay = document.getElementById('payPeriodDisplay').value;
     timesheetData.payPeriod = payPeriodDisplay || '';
+
+    // Employee signature is already stored in timesheetData.employeeSignature
+    // Save signature date
+    const signatureDateInput = document.getElementById('employeeSignatureDate');
+    if (signatureDateInput) {
+        timesheetData.employeeSignatureDate = signatureDateInput.value || '';
+    }
 }
 
 // Load timesheet data
@@ -1138,6 +1147,20 @@ function loadTimesheetData(data) {
         // Apply day type display
         handleDayTypeChange(2, dayIndex, day.dayType || 'regular');
     });
+
+    // Load employee signature if present
+    if (data.employeeSignature) {
+        displayEmployeeSignature(data.employeeSignature);
+    }
+
+    // Load signature date
+    const signatureDateInput = document.getElementById('employeeSignatureDate');
+    if (signatureDateInput) {
+        signatureDateInput.value = data.employeeSignatureDate || '';
+    }
+
+    // Update lock state based on signature
+    updateTimesheetLockState();
 
     calculateTotals();
 }
@@ -1304,6 +1327,9 @@ async function tryAutoFillFromTemplate(payPeriodLabel) {
 
 // Clear only the hours and totals, keep the dates, reset to defaults
 function clearTimesheetHours() {
+    // Clear signature when clearing/changing pay periods
+    clearEmployeeSignature();
+
     // Clear Week 1
     for (let i = 0; i < DAYS_PER_WEEK; i++) {
         const container = document.querySelector(`.time-entries-container[data-week="1"][data-day="${i}"]`);
@@ -1356,6 +1382,9 @@ function clearTimesheetHours() {
     document.getElementById('personalLeave').value = 0;
 
     // Don't clear employee name - it should persist across pay periods
+
+    // Update lock state (should be unlocked since signature was cleared)
+    updateTimesheetLockState();
 
     // Recalculate totals
     calculateTotals();
@@ -1607,6 +1636,368 @@ document.getElementById('optionsBtn').addEventListener('click', async () => {
     }
 });
 
+document.getElementById('supervisorModeBtn').addEventListener('click', async () => {
+    if (typeof window.electronAPI !== 'undefined') {
+        await window.electronAPI.openSupervisor();
+    }
+});
+
+// Signature capture variables
+let signatureCanvas = null;
+let signatureContext = null;
+let isDrawing = false;
+let employeeSignatureData = null;
+
+// Display employee signature on the form
+function displayEmployeeSignature(signatureDataUrl) {
+    const signatureImg = document.getElementById('employeeSignatureImg');
+    if (signatureImg && signatureDataUrl) {
+        signatureImg.src = signatureDataUrl;
+        signatureImg.style.display = 'block';
+    }
+}
+
+// Clear employee signature from the form
+function clearEmployeeSignature() {
+    const signatureImg = document.getElementById('employeeSignatureImg');
+    if (signatureImg) {
+        signatureImg.src = '';
+        signatureImg.style.display = 'none';
+    }
+    const signatureDateInput = document.getElementById('employeeSignatureDate');
+    if (signatureDateInput) {
+        signatureDateInput.value = '';
+    }
+    timesheetData.employeeSignature = null;
+    timesheetData.employeeSignatureDate = '';
+    employeeSignatureData = null;
+}
+
+// Lock/unlock timesheet based on signature status
+function updateTimesheetLockState() {
+    const isSigned = !!timesheetData.employeeSignature;
+    const eSignBtn = document.getElementById('eSignBtn');
+    const eraseSignBtn = document.getElementById('eraseSignBtn');
+
+    // Show/hide buttons
+    if (eSignBtn) eSignBtn.style.display = isSigned ? 'none' : '';
+    if (eraseSignBtn) eraseSignBtn.style.display = isSigned ? '' : 'none';
+
+    // Lock/unlock all input fields
+    const allInputs = document.querySelectorAll('input[type="time"], input[type="number"], input.total-input, select.day-type-select, input#employeeName');
+    allInputs.forEach(input => {
+        if (isSigned) {
+            input.disabled = true;
+            input.style.backgroundColor = '#f5f5f5';
+            input.style.cursor = 'not-allowed';
+        } else {
+            input.disabled = false;
+            input.style.backgroundColor = '';
+            input.style.cursor = '';
+        }
+    });
+
+    // Lock/unlock buttons
+    const actionButtons = document.querySelectorAll('.add-time-btn, .add-hours-btn, .remove-time-btn, .remove-hours-btn');
+    actionButtons.forEach(btn => {
+        if (isSigned) {
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+        } else {
+            btn.disabled = false;
+            btn.style.opacity = '';
+            btn.style.cursor = '';
+        }
+    });
+
+    // Personal leave input
+    const personalLeaveInput = document.getElementById('personalLeave');
+    if (personalLeaveInput) {
+        if (isSigned) {
+            personalLeaveInput.disabled = true;
+            personalLeaveInput.style.backgroundColor = '#f5f5f5';
+            personalLeaveInput.style.cursor = 'not-allowed';
+        } else {
+            personalLeaveInput.disabled = false;
+            personalLeaveInput.style.backgroundColor = '';
+            personalLeaveInput.style.cursor = '';
+        }
+    }
+}
+
+// Initialize signature canvas
+function initializeSignatureCanvas() {
+    signatureCanvas = document.getElementById('signaturePad');
+    signatureContext = signatureCanvas.getContext('2d');
+    signatureContext.strokeStyle = '#000';
+    signatureContext.lineWidth = 2;
+    signatureContext.lineCap = 'round';
+    signatureContext.lineJoin = 'round';
+}
+
+// Start drawing
+function startDrawing(e) {
+    isDrawing = true;
+    const rect = signatureCanvas.getBoundingClientRect();
+    const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
+    const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+    signatureContext.beginPath();
+    signatureContext.moveTo(x, y);
+}
+
+// Draw
+function draw(e) {
+    if (!isDrawing) return;
+    e.preventDefault();
+    const rect = signatureCanvas.getBoundingClientRect();
+    const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
+    const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+    signatureContext.lineTo(x, y);
+    signatureContext.stroke();
+}
+
+// Stop drawing
+function stopDrawing() {
+    isDrawing = false;
+}
+
+// Clear signature
+function clearSignature() {
+    signatureContext.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+}
+
+// Check if signature is empty
+function isSignatureEmpty() {
+    const pixelBuffer = new Uint32Array(
+        signatureContext.getImageData(0, 0, signatureCanvas.width, signatureCanvas.height).data.buffer
+    );
+    return !pixelBuffer.some(color => color !== 0);
+}
+
+// E-Sign button - shows signature modal
+document.getElementById('eSignBtn').addEventListener('click', async () => {
+    await showSignatureModalForESigning();
+});
+
+// Submit timesheet button - checks for existing signature
+document.getElementById('submitBtn').addEventListener('click', async () => {
+    // Validate timesheet has data
+    if (!timesheetData.employeeName) {
+        alert('Please enter your name before submitting');
+        return;
+    }
+    if (!timesheetData.payPeriod) {
+        alert('Please select a pay period before submitting');
+        return;
+    }
+
+    // Check if employee has signed
+    if (!timesheetData.employeeSignature) {
+        alert('Please sign the timesheet using the E-Sign button before submitting');
+        return;
+    }
+
+    // Use existing signature and show submit modal
+    employeeSignatureData = timesheetData.employeeSignature;
+    await showSubmitModal();
+});
+
+// Signature modal for E-Signing (displays signature on form)
+async function showSignatureModalForESigning() {
+    const modal = document.getElementById('signatureModal');
+
+    // Initialize canvas if not already done
+    if (!signatureCanvas) {
+        initializeSignatureCanvas();
+
+        // Add event listeners
+        signatureCanvas.addEventListener('mousedown', startDrawing);
+        signatureCanvas.addEventListener('mousemove', draw);
+        signatureCanvas.addEventListener('mouseup', stopDrawing);
+        signatureCanvas.addEventListener('mouseout', stopDrawing);
+
+        // Touch events for tablets
+        signatureCanvas.addEventListener('touchstart', startDrawing);
+        signatureCanvas.addEventListener('touchmove', draw);
+        signatureCanvas.addEventListener('touchend', stopDrawing);
+    }
+
+    // Load existing signature if available
+    if (timesheetData.employeeSignature) {
+        // Load signature onto canvas
+        const img = new Image();
+        img.onload = () => {
+            signatureContext.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+            signatureContext.drawImage(img, 0, 0);
+        };
+        img.src = timesheetData.employeeSignature;
+    } else {
+        // Clear canvas for new signature
+        clearSignature();
+    }
+
+    // Show modal
+    modal.style.display = 'flex';
+}
+
+// Signature modal logic (deprecated - keeping for backward compatibility)
+async function showSignatureModal() {
+    await showSignatureModalForESigning();
+}
+
+document.getElementById('signatureClearBtn').addEventListener('click', () => {
+    clearSignature();
+});
+
+document.getElementById('signatureCancelBtn').addEventListener('click', () => {
+    document.getElementById('signatureModal').style.display = 'none';
+});
+
+document.getElementById('signatureSaveBtn').addEventListener('click', async () => {
+    if (isSignatureEmpty()) {
+        alert('Please provide a signature before continuing');
+        return;
+    }
+
+    // Save signature as base64
+    const signatureData = signatureCanvas.toDataURL('image/png');
+    employeeSignatureData = signatureData;
+    timesheetData.employeeSignature = signatureData;
+
+    // Auto-populate signature date with current date if empty
+    const signatureDateInput = document.getElementById('employeeSignatureDate');
+    if (signatureDateInput && !signatureDateInput.value) {
+        const today = new Date();
+        const formattedDate = `${today.getMonth() + 1}/${today.getDate()}/${today.getFullYear()}`;
+        signatureDateInput.value = formattedDate;
+        timesheetData.employeeSignatureDate = formattedDate;
+    }
+
+    // Display signature on the form
+    displayEmployeeSignature(signatureData);
+
+    // Lock the timesheet
+    updateTimesheetLockState();
+
+    // Hide signature modal
+    document.getElementById('signatureModal').style.display = 'none';
+
+    // Auto-save to local file
+    autoSave();
+
+    alert('Signature saved successfully! Timesheet is now locked.');
+});
+
+// Erase signature button
+document.getElementById('eraseSignBtn').addEventListener('click', () => {
+    if (confirm('Are you sure you want to erase your signature? This will unlock the timesheet for editing.')) {
+        clearEmployeeSignature();
+        updateTimesheetLockState();
+        autoSave();
+        alert('Signature erased. Timesheet is now unlocked for editing.');
+    }
+});
+
+// Submit modal logic
+async function showSubmitModal() {
+    const modal = document.getElementById('submitModal');
+    const supervisorSelect = document.getElementById('supervisorSelect');
+
+    // Load supervisors
+    try {
+        const result = await window.timesheetAPI.getSupervisors();
+
+        if (result.success && result.supervisors) {
+            supervisorSelect.innerHTML = '<option value="">Select a supervisor...</option>';
+
+            result.supervisors.forEach(supervisor => {
+                const option = document.createElement('option');
+                option.value = supervisor.id;
+                option.textContent = supervisor.full_name;
+                supervisorSelect.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading supervisors:', error);
+        alert('Failed to load supervisors. Please check your server connection.');
+        return;
+    }
+
+    // Show modal
+    modal.style.display = 'flex';
+}
+
+document.getElementById('submitCancelBtn').addEventListener('click', () => {
+    document.getElementById('submitModal').style.display = 'none';
+});
+
+document.getElementById('submitConfirmBtn').addEventListener('click', async () => {
+    const supervisorId = document.getElementById('supervisorSelect').value;
+
+    if (!supervisorId) {
+        alert('Please select a supervisor');
+        return;
+    }
+
+    // Save current timesheet data
+    saveTimesheetData();
+
+    // Prepare submission data
+    const submissionData = {
+        employeeName: timesheetData.employeeName,
+        payPeriod: timesheetData.payPeriod,
+        supervisorId: supervisorId,
+        employeeSignature: employeeSignatureData,
+        employeeSignatureDate: timesheetData.employeeSignatureDate,
+        timesheetData: {
+            week1: timesheetData.week1,
+            week2: timesheetData.week2,
+            personalLeave: timesheetData.personalLeave
+        }
+    };
+
+    try {
+        const result = await window.timesheetAPI.submitTimesheet(submissionData);
+
+        if (result.success) {
+            alert(`Timesheet submitted successfully!\nSubmission ID: ${result.timesheetId}`);
+            document.getElementById('submitModal').style.display = 'none';
+            employeeSignatureData = null; // Clear signature data
+        } else {
+            alert('Submission failed: ' + (result.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Submission error:', error);
+        alert('Failed to submit timesheet: ' + error.message);
+    }
+});
+
+// Show/hide server-related buttons based on settings
+async function updateSubmitButtonVisibility() {
+    if (typeof window.electronAPI !== 'undefined') {
+        try {
+            const result = await window.electronAPI.loadSettings();
+            if (result.success && result.settings) {
+                const enabled = result.settings.enableServerSubmission || false;
+                const submitBtn = document.getElementById('submitBtn');
+                if (submitBtn) {
+                    submitBtn.style.display = enabled ? '' : 'none';
+                }
+
+                // Show/hide supervisor mode button based on settings
+                const showSupervisor = result.settings.showSupervisorButton || false;
+                const supervisorBtn = document.getElementById('supervisorModeBtn');
+                if (supervisorBtn) {
+                    supervisorBtn.style.display = (enabled && showSupervisor) ? '' : 'none';
+                }
+            }
+        } catch (error) {
+            console.error('Error loading settings for submit button:', error);
+        }
+    }
+}
+
 // Load employee name from settings
 async function loadEmployeeName() {
     if (typeof window.electronAPI !== 'undefined') {
@@ -1676,6 +2067,8 @@ if (typeof window.electronAPI !== 'undefined') {
         updateAddHoursButtonVisibility();
         // Update salary mode display
         updateSalaryModeDisplay();
+        // Update submit button visibility
+        updateSubmitButtonVisibility();
     });
 }
 
@@ -1687,6 +2080,16 @@ calculateTotals();
 loadEmployeeName();
 updateAddHoursButtonVisibility();
 updateSalaryModeDisplay();
+updateSubmitButtonVisibility();
+
+// Initialize API client
+if (typeof window.timesheetAPI !== 'undefined') {
+    window.timesheetAPI.initialize().then(() => {
+        console.log('API client initialized');
+    }).catch(error => {
+        console.error('Failed to initialize API client:', error);
+    });
+}
 
 // Auto-update functionality
 if (typeof window.electronAPI !== 'undefined') {

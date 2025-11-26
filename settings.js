@@ -1,5 +1,17 @@
 // Settings page logic
 
+// Toggle server connection options visibility
+function toggleServerConnectionOptions() {
+    const enableCheckbox = document.getElementById('enableServerSubmission');
+    const optionsDiv = document.getElementById('serverConnectionOptions');
+
+    if (enableCheckbox.checked) {
+        optionsDiv.style.display = 'block';
+    } else {
+        optionsDiv.style.display = 'none';
+    }
+}
+
 // Load settings when window opens
 async function loadSettings() {
     if (typeof window.electronAPI !== 'undefined') {
@@ -25,6 +37,24 @@ async function loadSettings() {
                 if (result.settings.salaryMode !== undefined) {
                     document.getElementById('salaryMode').checked = result.settings.salaryMode;
                 }
+
+                // Load server URL
+                if (result.settings.serverUrl) {
+                    document.getElementById('serverUrl').value = result.settings.serverUrl;
+                }
+
+                // Load enable server submission
+                if (result.settings.enableServerSubmission !== undefined) {
+                    document.getElementById('enableServerSubmission').checked = result.settings.enableServerSubmission;
+                }
+
+                // Load show supervisor button
+                if (result.settings.showSupervisorButton !== undefined) {
+                    document.getElementById('showSupervisorButton').checked = result.settings.showSupervisorButton;
+                }
+
+                // Update visibility of server connection options
+                toggleServerConnectionOptions();
             }
         } catch (error) {
             console.error('Error loading settings:', error);
@@ -38,7 +68,10 @@ async function saveSettings() {
         employeeName: document.getElementById('employeeName').value,
         autoFillFromTemplate: document.getElementById('autoFillFromTemplate').checked,
         showAddHoursButton: document.getElementById('showAddHoursButton').checked,
-        salaryMode: document.getElementById('salaryMode').checked
+        salaryMode: document.getElementById('salaryMode').checked,
+        serverUrl: document.getElementById('serverUrl').value,
+        enableServerSubmission: document.getElementById('enableServerSubmission').checked,
+        showSupervisorButton: document.getElementById('showSupervisorButton').checked
     };
 
     if (typeof window.electronAPI !== 'undefined') {
@@ -64,6 +97,9 @@ document.getElementById('cancelBtn').addEventListener('click', () => {
         window.electronAPI.closeSettings();
     }
 });
+
+// Toggle server connection options when checkbox is changed
+document.getElementById('enableServerSubmission').addEventListener('change', toggleServerConnectionOptions);
 
 // Load and display app version
 async function loadAppVersion() {

@@ -12,10 +12,12 @@
             <button id="clockInBtn" class="btn btn-clock" disabled>Clock In</button>
             <button id="clockOutBtn" class="btn btn-clock" disabled>Clock Out</button>
             <div class="button-separator"></div>
+            <button id="submitBtn" class="btn btn-submit" style="display: none;">Submit to Supervisor</button>
             <button id="loadBtn" class="btn">Load</button>
             <button id="exportPdfBtn" class="btn btn-primary">Export PDF</button>
             <button id="printBtn" class="btn">Print</button>
             <div class="button-spacer"></div>
+            <button id="supervisorModeBtn" class="btn">Supervisor Mode</button>
             <button id="optionsBtn" class="btn">Options</button>
         </div>
 
@@ -60,12 +62,59 @@
             <div class="signature-section">
                 <div class="signature-row">
                     <span>Employee Signature & Date</span>
-                    <div class="signature-line"></div>
+                    <div class="signature-display">
+                        <img id="employeeSignatureImg" class="signature-image" style="display: none;" />
+                        <div class="signature-line"></div>
+                        <input type="text" id="employeeSignatureDate" class="signature-date-input" placeholder="Date">
+                        <button id="eSignBtn" class="btn btn-sign no-print">E-Sign</button>
+                        <button id="eraseSignBtn" class="btn btn-sign no-print" style="display: none;">Erase</button>
+                    </div>
                 </div>
                 <div class="signature-row">
                     <span>Supervisor Signature & Date:</span>
-                    <div class="signature-line"></div>
+                    <div class="signature-display">
+                        <img id="supervisorSignatureImg" class="signature-image" style="display: none;" />
+                        <div class="signature-line"></div>
+                    </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signature capture modal -->
+    <div id="signatureModal" class="modal" style="display: none;">
+        <div class="modal-content signature-modal">
+            <h2>Sign Timesheet</h2>
+            <p>Please sign below to confirm the accuracy of your timesheet.</p>
+
+            <div class="signature-pad-container">
+                <canvas id="signaturePad" width="460" height="200"></canvas>
+            </div>
+
+            <div class="modal-buttons">
+                <button id="signatureClearBtn" class="btn">Clear</button>
+                <button id="signatureCancelBtn" class="btn btn-secondary">Cancel</button>
+                <button id="signatureSaveBtn" class="btn btn-primary">Save Signature</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit timesheet modal -->
+    <div id="submitModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Submit Timesheet</h2>
+            <p>Submit this timesheet to your supervisor for approval.</p>
+
+            <div class="form-group">
+                <label for="supervisorSelect">Select Supervisor:</label>
+                <select id="supervisorSelect" class="input-field">
+                    <option value="">Loading supervisors...</option>
+                </select>
+            </div>
+
+            <div class="modal-buttons">
+                <button id="submitCancelBtn" class="btn btn-secondary">Cancel</button>
+                <button id="submitConfirmBtn" class="btn btn-primary">Submit</button>
             </div>
         </div>
     </div>
@@ -91,6 +140,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="api-client.js"></script>
     <script src="renderer.js"></script>
 </body>
 </html>

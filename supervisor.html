@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supervisor - Timesheet Review</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="supervisor-styles.css">
+</head>
+<body>
+    <div class="supervisor-container">
+        <!-- Header -->
+        <div class="supervisor-header">
+            <div class="header-left">
+                <img src="Logo.png" alt="HomeCare Montana" class="header-logo">
+                <h1>Supervisor Dashboard</h1>
+            </div>
+            <div class="header-right">
+                <span id="supervisorName" class="supervisor-name"></span>
+                <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+                <button id="backToEmployeeBtn" class="btn">Employee Mode</button>
+            </div>
+        </div>
+
+        <!-- Login Screen -->
+        <div id="loginScreen" class="login-screen">
+            <div class="login-box">
+                <h2>Supervisor Login</h2>
+                <p>Please enter your credentials to access pending timesheets.</p>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="username">Username:</label>
+                        <input type="text" id="username" class="input-field" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" class="input-field" required autocomplete="current-password">
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="rememberMe">
+                            Remember me
+                        </label>
+                    </div>
+                    <div id="loginError" class="error-message" style="display: none;"></div>
+                    <button type="submit" class="btn btn-primary btn-block">Login</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Main Dashboard -->
+        <div id="dashboardScreen" class="dashboard-screen" style="display: none;">
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="pending">Pending Timesheets</button>
+                <button class="tab-btn" data-tab="approved">Approved</button>
+                <button class="tab-btn" data-tab="rejected">Rejected</button>
+            </div>
+
+            <!-- Pending Timesheets Tab -->
+            <div id="pendingTab" class="tab-content active">
+                <div class="tab-header">
+                    <h2>Pending Timesheets</h2>
+                    <button id="refreshPendingBtn" class="btn">Refresh</button>
+                </div>
+                <div id="pendingTimesheetsTable" class="timesheets-table-container">
+                    <table class="timesheets-table">
+                        <thead>
+                            <tr>
+                                <th>Employee Name</th>
+                                <th>Pay Period</th>
+                                <th>Submitted</th>
+                                <th>Total Hours</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pendingTimesheetsBody">
+                            <tr class="no-data">
+                                <td colspan="5">Loading timesheets...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Approved Timesheets Tab -->
+            <div id="approvedTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Approved Timesheets</h2>
+                    <button id="refreshApprovedBtn" class="btn">Refresh</button>
+                </div>
+                <div id="approvedTimesheetsTable" class="timesheets-table-container">
+                    <table class="timesheets-table">
+                        <thead>
+                            <tr>
+                                <th>Employee Name</th>
+                                <th>Pay Period</th>
+                                <th>Submitted</th>
+                                <th>Approved</th>
+                                <th>Total Hours</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="approvedTimesheetsBody">
+                            <tr class="no-data">
+                                <td colspan="6">No approved timesheets</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Rejected Timesheets Tab -->
+            <div id="rejectedTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Rejected Timesheets</h2>
+                    <button id="refreshRejectedBtn" class="btn">Refresh</button>
+                </div>
+                <div id="rejectedTimesheetsTable" class="timesheets-table-container">
+                    <table class="timesheets-table">
+                        <thead>
+                            <tr>
+                                <th>Employee Name</th>
+                                <th>Pay Period</th>
+                                <th>Submitted</th>
+                                <th>Rejected</th>
+                                <th>Reason</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rejectedTimesheetsBody">
+                            <tr class="no-data">
+                                <td colspan="6">No rejected timesheets</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timesheet Review Modal -->
+        <div id="reviewModal" class="modal" style="display: none;">
+            <div class="modal-content review-modal">
+                <div class="modal-header">
+                    <h2>Review Timesheet</h2>
+                    <button id="closeReviewBtn" class="btn-close">&times;</button>
+                </div>
+
+                <div class="modal-body">
+                    <!-- Timesheet Display (Read-Only) -->
+                    <div id="reviewTimesheet" class="timesheet review-timesheet">
+                        <div class="logo-container">
+                            <img src="Logo.png" alt="HomeCare Montana" class="logo-image">
+                        </div>
+
+                        <h1>Inter-Office Time Card</h1>
+
+                        <div class="header-info">
+                            <div class="form-group">
+                                <label><strong>Name:</strong></label>
+                                <span id="reviewEmployeeName" class="display-value"></span>
+                            </div>
+                            <div class="form-group">
+                                <label><strong>Pay Period:</strong></label>
+                                <span id="reviewPayPeriod" class="display-value"></span>
+                            </div>
+                        </div>
+
+                        <table class="timecard-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Hours: from/to</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reviewTimecardBody">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+
+                        <div class="signature-section">
+                            <div class="signature-row">
+                                <span>Employee Signature & Date</span>
+                                <div class="signature-display">
+                                    <img id="reviewEmployeeSignature" class="signature-image" style="display: none;" />
+                                    <div class="signature-line"></div>
+                                    <span id="reviewEmployeeSignatureDate" class="signature-date-display"></span>
+                                </div>
+                            </div>
+                            <div class="signature-row">
+                                <span>Supervisor Signature & Date</span>
+                                <div class="signature-display">
+                                    <img id="reviewSupervisorSignature" class="signature-image" style="display: none;" />
+                                    <div class="signature-line"></div>
+                                    <span id="reviewSupervisorSignatureDate" class="signature-date-display"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <div class="action-buttons">
+                        <button id="approveBtn" class="btn btn-success">Approve & Sign</button>
+                        <button id="rejectBtn" class="btn btn-danger">Reject</button>
+                        <button id="printReviewBtn" class="btn">Print</button>
+                        <button id="cancelReviewBtn" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Signature Modal (for Supervisor) -->
+        <div id="supervisorSignatureModal" class="modal" style="display: none;">
+            <div class="modal-content signature-modal">
+                <h2>Sign Timesheet</h2>
+                <p>Please sign below to approve this timesheet.</p>
+
+                <div class="signature-pad-container">
+                    <canvas id="supervisorSignaturePad" width="460" height="200"></canvas>
+                </div>
+
+                <div class="form-group">
+                    <label for="supervisorSignatureDate">Date:</label>
+                    <input type="text" id="supervisorSignatureDateInput" class="input-field" placeholder="MM/DD/YYYY">
+                </div>
+
+                <div class="modal-buttons">
+                    <button id="supervisorSignatureClearBtn" class="btn">Clear</button>
+                    <button id="supervisorSignatureCancelBtn" class="btn btn-secondary">Cancel</button>
+                    <button id="supervisorSignatureSaveBtn" class="btn btn-primary">Save & Approve</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reject Modal -->
+        <div id="rejectModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h2>Reject Timesheet</h2>
+                <p>Please provide a reason for rejecting this timesheet.</p>
+
+                <div class="form-group">
+                    <label for="rejectionReason">Reason:</label>
+                    <textarea id="rejectionReason" class="input-field" rows="4" placeholder="Enter reason for rejection..."></textarea>
+                </div>
+
+                <div class="modal-buttons">
+                    <button id="rejectCancelBtn" class="btn btn-secondary">Cancel</button>
+                    <button id="rejectConfirmBtn" class="btn btn-danger">Confirm Rejection</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logout Confirmation Modal -->
+        <div id="logoutModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h2>Confirm Logout</h2>
+                <p>Are you sure you want to logout?</p>
+
+                <div class="modal-buttons">
+                    <button id="logoutCancelBtn" class="btn btn-secondary">Cancel</button>
+                    <button id="logoutConfirmBtn" class="btn btn-primary">Logout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="api-client.js"></script>
+    <script src="supervisor.js"></script>
+</body>
+</html>
