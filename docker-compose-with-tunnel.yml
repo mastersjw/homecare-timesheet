@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  timesheet-api:
+    build: ./server
+    container_name: timesheet-api
+    restart: unless-stopped
+    ports:
+      - "3001:3000"  # Expose on port 3001
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://timesheet_user:${DB_PASSWORD}@timesheet-db:5432/timesheets
+      - JWT_SECRET=${JWT_SECRET}
+      - PORT=3000
+      - CORS_ORIGIN=*
+    depends_on:
+      - timesheet-db
+    networks:
+      - timesheet-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  timesheet-db:
+    image: postgres:15-alpine
+    container_name: timesheet-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=timesheets
+      - POSTGRES_USER=timesheet_user
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - timesheet-db-data:/var/lib/postgresql/data
+      - ./server/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5433:5432"  # Expose on 5433 to avoid conflicts
+    networks:
+      - timesheet-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U timesheet_user -d timesheets"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflare-tunnel
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    networks:
+      - timesheet-network
+    depends_on:
+      timesheet-api:
+        condition: service_healthy
+
+networks:
+  timesheet-network:
+    driver: bridge
+
+volumes:
+  timesheet-db-data:
