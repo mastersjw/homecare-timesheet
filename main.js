@@ -19,6 +19,7 @@ function createWindow() {
   });
 
   mainWindow.loadFile('index.html');
+  mainWindow.setMenuBarVisibility(false);
 
   // Open DevTools in development
   // mainWindow.webContents.openDevTools();
@@ -70,6 +71,7 @@ function createSupervisorWindow() {
   });
 
   supervisorWindow.loadFile('supervisor.html');
+  supervisorWindow.setMenuBarVisibility(false);
 
   supervisorWindow.on('closed', () => {
     supervisorWindow = null;
