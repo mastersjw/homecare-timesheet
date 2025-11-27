@@ -26,25 +26,21 @@
   },
   "build": {
     "appId": "com.homecare.timesheet",
-    "productName": "Homecare Timesheet",
-    "artifactName": "Homecare-Timesheet-Setup-${version}.${ext}",
+    "productName": "HomecareTimesheet",
     "win": {
       "target": [
         {
           "target": "nsis",
-          "arch": [
-            "x64"
-          ]
+          "arch": ["x64"]
         }
-      ],
-      "icon": "build/icon.ico",
-      "sign": null
+      ]
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "artifactName": "HomecareTimesheet-Setup-${version}.${ext}"
     },
     "files": [
       "main.js",
