@@ -68,17 +68,6 @@ body {
     opacity: 0.6;
 }
 
-.btn-submit {
-    background-color: #17a2b8;
-    color: white;
-    border-color: #17a2b8;
-    font-weight: bold;
-}
-
-.btn-submit:hover {
-    background-color: #138496;
-}
-
 .btn-secondary {
     background-color: #6c757d;
     color: white;
