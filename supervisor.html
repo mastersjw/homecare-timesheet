@@ -272,6 +272,20 @@
                 </div>
             </div>
         </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div id="deleteModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h2>Confirm Delete</h2>
+                <p id="deleteModalMessage">Are you sure you want to delete this timesheet?</p>
+                <p style="color: #dc3545; font-weight: bold;">This action cannot be undone.</p>
+
+                <div class="modal-buttons">
+                    <button id="deleteCancelBtn" class="btn btn-secondary">Cancel</button>
+                    <button id="deleteConfirmBtn" class="btn btn-danger">Delete</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>

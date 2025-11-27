@@ -52,6 +52,10 @@ function setupEventListeners() {
     document.getElementById('logoutCancelBtn').addEventListener('click', hideLogoutModal);
     document.getElementById('logoutConfirmBtn').addEventListener('click', confirmLogout);
 
+    // Delete modal
+    document.getElementById('deleteCancelBtn').addEventListener('click', hideDeleteModal);
+    document.getElementById('deleteConfirmBtn').addEventListener('click', confirmDelete);
+
     // Back to employee mode
     document.getElementById('backToEmployeeBtn').addEventListener('click', () => {
         if (typeof window.electronAPI !== 'undefined') {
@@ -158,6 +162,55 @@ async function confirmLogout() {
 
     // Show login screen
     await showLoginScreen();
+}
+
+// Delete Modal Functions
+let deleteTimesheetId = null;
+
+// Show delete modal
+function showDeleteModal(timesheetId, employeeName, payPeriod) {
+    deleteTimesheetId = timesheetId;
+    const message = `Are you sure you want to delete the timesheet for ${employeeName} (${payPeriod})?`;
+    document.getElementById('deleteModalMessage').textContent = message;
+    document.getElementById('deleteModal').style.display = 'flex';
+}
+
+// Hide delete modal
+function hideDeleteModal() {
+    document.getElementById('deleteModal').style.display = 'none';
+    deleteTimesheetId = null;
+}
+
+// Confirm delete
+async function confirmDelete() {
+    if (!deleteTimesheetId) {
+        return;
+    }
+
+    try {
+        const result = await window.timesheetAPI.deleteTimesheet(deleteTimesheetId, supervisorToken);
+
+        if (result.success) {
+            hideDeleteModal();
+
+            // Reload the current tab
+            const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
+            if (activeTab === 'pending') {
+                loadPendingTimesheets();
+            } else if (activeTab === 'approved') {
+                loadApprovedTimesheets();
+            } else if (activeTab === 'rejected') {
+                loadRejectedTimesheets();
+            }
+
+            alert('Timesheet deleted successfully');
+        } else {
+            alert('Failed to delete timesheet: ' + (result.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error deleting timesheet:', error);
+        alert('Error deleting timesheet');
+    }
 }
 
 // Show login error
@@ -286,6 +339,7 @@ async function loadPendingTimesheets() {
                         <td>${calculateTotalHours(ts.timesheet_data)}</td>
                         <td>
                             <button class="btn action-btn btn-primary" onclick="viewTimesheet('${ts.id}')">Review</button>
+                            <button class="btn action-btn btn-danger" onclick="showDeleteModal('${ts.id}', '${escapeHtml(ts.employee_name)}', '${escapeHtml(ts.pay_period)}')">Delete</button>
                         </td>
                     </tr>
                 `).join('');
@@ -323,6 +377,7 @@ async function loadApprovedTimesheets() {
                         <td>
                             <button class="btn action-btn" onclick="viewTimesheet('${ts.id}')">View</button>
                             <button class="btn action-btn" onclick="printTimesheet('${ts.id}')">Print</button>
+                            <button class="btn action-btn btn-danger" onclick="showDeleteModal('${ts.id}', '${escapeHtml(ts.employee_name)}', '${escapeHtml(ts.pay_period)}')">Delete</button>
                         </td>
                     </tr>
                 `).join('');
@@ -358,6 +413,7 @@ async function loadRejectedTimesheets() {
                         <td>${escapeHtml(ts.rejection_reason || 'N/A')}</td>
                         <td>
                             <button class="btn action-btn" onclick="viewTimesheet('${ts.id}')">View</button>
+                            <button class="btn action-btn btn-danger" onclick="showDeleteModal('${ts.id}', '${escapeHtml(ts.employee_name)}', '${escapeHtml(ts.pay_period)}')">Delete</button>
                         </td>
                     </tr>
                 `).join('');
@@ -835,10 +891,12 @@ async function printSelectedTimesheets(tab) {
         return;
     }
 
-    // Create a printable container
+    // Create a printable container positioned off-screen
     const printContainer = document.createElement('div');
-    printContainer.style.display = 'none';
     printContainer.id = 'printContainer';
+    printContainer.style.position = 'absolute';
+    printContainer.style.left = '-9999px';
+    printContainer.style.top = '0';
     document.body.appendChild(printContainer);
 
     try {
@@ -863,14 +921,18 @@ async function printSelectedTimesheets(tab) {
 
             // Clean up after printing
             setTimeout(() => {
-                document.body.removeChild(printContainer);
+                if (printContainer && printContainer.parentNode) {
+                    document.body.removeChild(printContainer);
+                }
             }, 100);
         }, 500);
 
     } catch (error) {
         console.error('Error printing selected timesheets:', error);
         alert('Error loading timesheets for printing');
-        document.body.removeChild(printContainer);
+        if (printContainer && printContainer.parentNode) {
+            document.body.removeChild(printContainer);
+        }
     }
 }
 
@@ -902,9 +964,9 @@ function generatePrintableTimesheet(timesheet) {
 
             return `
                 <tr>
-                    <td>${escapeHtml(day.date || '')}</td>
-                    <td>${hoursDisplay || '-'}</td>
-                    <td style="text-align: center;">${(day.total || 0).toFixed(2)}</td>
+                    <td style="border: 1px solid #000; padding: 5px; font-size: 12px;">${escapeHtml(day.date || '')}</td>
+                    <td style="border: 1px solid #000; padding: 5px; font-size: 12px;">${hoursDisplay || '-'}</td>
+                    <td style="border: 1px solid #000; padding: 5px; text-align: center; font-size: 12px;">${(day.total || 0).toFixed(2)}</td>
                 </tr>
             `;
         }).join('');
@@ -937,9 +999,9 @@ function generatePrintableTimesheet(timesheet) {
 
             return `
                 <tr>
-                    <td>${escapeHtml(day.date || '')}</td>
-                    <td>${hoursDisplay || '-'}</td>
-                    <td style="text-align: center;">${(day.total || 0).toFixed(2)}</td>
+                    <td style="border: 1px solid #000; padding: 5px; font-size: 12px;">${escapeHtml(day.date || '')}</td>
+                    <td style="border: 1px solid #000; padding: 5px; font-size: 12px;">${hoursDisplay || '-'}</td>
+                    <td style="border: 1px solid #000; padding: 5px; text-align: center; font-size: 12px;">${(day.total || 0).toFixed(2)}</td>
                 </tr>
             `;
         }).join('');
@@ -952,67 +1014,71 @@ function generatePrintableTimesheet(timesheet) {
     const overtimeHours = Math.max(0, totalHours - 80);
 
     return `
-        <div class="printable-timesheet" style="font-family: 'Times New Roman', Times, serif; padding: 20px; max-width: 800px; margin: 0 auto;">
-            <div style="text-align: center; margin-bottom: 20px;">
-                <h1 style="margin: 0;">Inter-Office Time Card</h1>
+        <div class="printable-timesheet" style="font-family: 'Times New Roman', Times, serif; padding: 10px 30px; max-width: 850px; margin: 0 auto;">
+            <div style="text-align: center; margin-bottom: 2px;">
+                <img src="Logo.png" alt="HomeCare Montana" style="max-width: 200px; height: auto;">
             </div>
 
+            <h1 style="text-align: center; margin-bottom: 5px; font-size: 14px;">Inter-Office Time Card</h1>
+
             <div style="margin-bottom: 20px;">
-                <div style="margin-bottom: 10px;"><strong>Name:</strong> ${escapeHtml(timesheet.employee_name)}</div>
-                <div><strong>Pay Period:</strong> ${escapeHtml(timesheet.pay_period)}</div>
+                <div style="margin-bottom: 8px;"><strong>Name:</strong> ${escapeHtml(timesheet.employee_name)}</div>
+                <div style="margin-bottom: 8px;"><strong>Pay Period:</strong> ${escapeHtml(timesheet.pay_period)}</div>
             </div>
 
             <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
                 <thead>
-                    <tr style="background-color: #f0f0f0;">
-                        <th style="border: 1px solid #000; padding: 8px; text-align: left;">Date</th>
-                        <th style="border: 1px solid #000; padding: 8px; text-align: left;">Hours: from/to</th>
-                        <th style="border: 1px solid #000; padding: 8px; text-align: center;">Total</th>
+                    <tr>
+                        <th style="border: 1px solid #000; padding: 5px; text-align: left; font-size: 12px;">Date</th>
+                        <th style="border: 1px solid #000; padding: 5px; text-align: left; font-size: 12px;">Hours: from/to</th>
+                        <th style="border: 1px solid #000; padding: 5px; text-align: center; font-size: 12px;">Total</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${week1Rows}
-                    <tr style="background-color: #f9f9f9; font-weight: bold;">
-                        <td colspan="2" style="border: 1px solid #000; padding: 8px; text-align: right;">Week 1 Total:</td>
-                        <td style="border: 1px solid #000; padding: 8px; text-align: center;">${week1Total.toFixed(2)}</td>
+                    <tr style="font-weight: bold;">
+                        <td colspan="2" style="border: 1px solid #000; padding: 5px; text-align: right; font-size: 12px;">Week 1 Total:</td>
+                        <td style="border: 1px solid #000; padding: 5px; text-align: center; font-size: 12px;">${week1Total.toFixed(2)}</td>
                     </tr>
                     ${week2Rows}
-                    <tr style="background-color: #f9f9f9; font-weight: bold;">
-                        <td colspan="2" style="border: 1px solid #000; padding: 8px; text-align: right;">Week 2 Total:</td>
-                        <td style="border: 1px solid #000; padding: 8px; text-align: center;">${week2Total.toFixed(2)}</td>
+                    <tr style="font-weight: bold;">
+                        <td colspan="2" style="border: 1px solid #000; padding: 5px; text-align: right; font-size: 12px;">Week 2 Total:</td>
+                        <td style="border: 1px solid #000; padding: 5px; text-align: center; font-size: 12px;">${week2Total.toFixed(2)}</td>
                     </tr>
-                    <tr style="background-color: #e0e0e0; font-weight: bold;">
-                        <td colspan="2" style="border: 1px solid #000; padding: 8px; text-align: right;">Total Hours:</td>
-                        <td style="border: 1px solid #000; padding: 8px; text-align: center;">${totalHours.toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                        <td colspan="2" style="border: 1px solid #000; padding: 8px; text-align: right;">Regular Hours:</td>
-                        <td style="border: 1px solid #000; padding: 8px; text-align: center;">${regularHours.toFixed(2)}</td>
+                    <tr style="font-weight: bold;">
+                        <td colspan="2" style="border: 1px solid #000; padding: 5px; text-align: right; font-size: 12px;">Total Hours:</td>
+                        <td style="border: 1px solid #000; padding: 5px; text-align: center; font-size: 12px;">${totalHours.toFixed(2)}</td>
                     </tr>
                     <tr>
-                        <td colspan="2" style="border: 1px solid #000; padding: 8px; text-align: right;">Overtime Hours:</td>
-                        <td style="border: 1px solid #000; padding: 8px; text-align: center;">${overtimeHours.toFixed(2)}</td>
+                        <td colspan="2" style="border: 1px solid #000; padding: 5px; text-align: right; font-size: 12px;">Regular Hours:</td>
+                        <td style="border: 1px solid #000; padding: 5px; text-align: center; font-size: 12px;">${regularHours.toFixed(2)}</td>
                     </tr>
                     <tr>
-                        <td colspan="2" style="border: 1px solid #000; padding: 8px; text-align: right;">Personal Leave:</td>
-                        <td style="border: 1px solid #000; padding: 8px; text-align: center;">${(data.personalLeave || 0).toFixed(2)}</td>
+                        <td colspan="2" style="border: 1px solid #000; padding: 5px; text-align: right; font-size: 12px;">Overtime Hours:</td>
+                        <td style="border: 1px solid #000; padding: 5px; text-align: center; font-size: 12px;">${overtimeHours.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="border: 1px solid #000; padding: 5px; text-align: right; font-size: 12px;">Personal Leave:</td>
+                        <td style="border: 1px solid #000; padding: 5px; text-align: center; font-size: 12px;">${(data.personalLeave || 0).toFixed(2)}</td>
                     </tr>
                 </tbody>
             </table>
 
-            <div style="margin-top: 40px;">
-                <div style="margin-bottom: 40px;">
-                    <div style="margin-bottom: 10px;">Employee Signature & Date</div>
-                    ${timesheet.employee_signature ? `<img src="${timesheet.employee_signature}" style="max-width: 200px; height: auto; display: block;">` : ''}
-                    <div style="border-bottom: 1px solid #000; width: 300px; margin-top: 5px;"></div>
-                    ${timesheet.employee_signature_date ? `<div style="margin-top: 5px;">${escapeHtml(timesheet.employee_signature_date)}</div>` : ''}
+            <div style="margin-top: 15px;">
+                <div style="margin-bottom: 8px; display: flex; align-items: flex-end; position: relative;">
+                    <span style="min-width: 180px; font-size: 13px;">Employee Signature & Date</span>
+                    <div style="flex: 1; position: relative; height: 65px; border-bottom: 1px solid #000; margin-right: 5px;">
+                        ${timesheet.employee_signature ? `<img src="${timesheet.employee_signature}" style="max-height: 60px; max-width: 200px; position: absolute; left: 10px; bottom: 0;">` : ''}
+                    </div>
+                    ${timesheet.employee_signature_date ? `<span style="margin-left: 10px; font-size: 13px;">${escapeHtml(timesheet.employee_signature_date)}</span>` : ''}
                 </div>
 
-                <div>
-                    <div style="margin-bottom: 10px;">Supervisor Signature & Date</div>
-                    ${timesheet.supervisor_signature ? `<img src="${timesheet.supervisor_signature}" style="max-width: 200px; height: auto; display: block;">` : ''}
-                    <div style="border-bottom: 1px solid #000; width: 300px; margin-top: 5px;"></div>
-                    ${timesheet.supervisor_signature_date ? `<div style="margin-top: 5px;">${escapeHtml(timesheet.supervisor_signature_date)}</div>` : ''}
+                <div style="margin-bottom: 8px; display: flex; align-items: flex-end; position: relative;">
+                    <span style="min-width: 180px; font-size: 13px;">Supervisor Signature & Date</span>
+                    <div style="flex: 1; position: relative; height: 65px; border-bottom: 1px solid #000; margin-right: 5px;">
+                        ${timesheet.supervisor_signature ? `<img src="${timesheet.supervisor_signature}" style="max-height: 60px; max-width: 200px; position: absolute; left: 10px; bottom: 0;">` : ''}
+                    </div>
+                    ${timesheet.supervisor_signature_date ? `<span style="margin-left: 10px; font-size: 13px;">${escapeHtml(timesheet.supervisor_signature_date)}</span>` : ''}
                 </div>
             </div>
         </div>

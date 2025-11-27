@@ -413,19 +413,22 @@
 
 /* Print Styles for Review Modal */
 @media print {
+    body {
+        background-color: white;
+        padding: 0;
+        margin: 0;
+    }
+
     .supervisor-header,
     .tabs,
     .tab-header,
     .modal-header,
     .modal-footer,
-    .btn-close {
-        display: none !important;
-    }
-
+    .btn-close,
+    .dashboard-screen,
+    .login-screen,
     .modal {
-        display: block !important;
-        position: static;
-        background-color: white;
+        display: none !important;
     }
 
     .modal-content {
@@ -466,5 +469,13 @@
         font-size: 13px;
         color: #333 !important;
         visibility: visible !important;
+    }
+
+    /* Print Selected Timesheets */
+    #printContainer {
+        display: block !important;
+        position: static !important;
+        left: auto !important;
+        top: auto !important;
     }
 }

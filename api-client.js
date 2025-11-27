@@ -155,6 +155,15 @@ class TimesheetAPI {
         });
     }
 
+    async deleteTimesheet(id, token) {
+        return await this.request(`/api/timesheets/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+    }
+
     // Load saved token on initialization
     async restoreSession() {
         if (typeof window.electronAPI !== 'undefined') {
