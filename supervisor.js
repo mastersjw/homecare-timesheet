@@ -268,17 +268,18 @@ function switchTab(tabName) {
 // Load pending timesheets
 async function loadPendingTimesheets() {
     const tbody = document.getElementById('pendingTimesheetsBody');
-    tbody.innerHTML = '<tr class="no-data"><td colspan="5">Loading...</td></tr>';
+    tbody.innerHTML = '<tr class="no-data"><td colspan="6">Loading...</td></tr>';
 
     try {
         const result = await window.timesheetAPI.getPendingTimesheets(supervisorToken);
 
         if (result.success && result.timesheets) {
             if (result.timesheets.length === 0) {
-                tbody.innerHTML = '<tr class="no-data"><td colspan="5">No pending timesheets</td></tr>';
+                tbody.innerHTML = '<tr class="no-data"><td colspan="6">No pending timesheets</td></tr>';
             } else {
                 tbody.innerHTML = result.timesheets.map(ts => `
                     <tr>
+                        <td><input type="checkbox" class="timesheet-checkbox pending-checkbox" data-id="${ts.id}"></td>
                         <td>${escapeHtml(ts.employee_name)}</td>
                         <td>${escapeHtml(ts.pay_period)}</td>
                         <td>${formatDate(ts.submitted_at)}</td>
@@ -288,30 +289,32 @@ async function loadPendingTimesheets() {
                         </td>
                     </tr>
                 `).join('');
+                updatePrintButtonVisibility('pending');
             }
         } else {
-            tbody.innerHTML = '<tr class="no-data"><td colspan="5">Failed to load timesheets</td></tr>';
+            tbody.innerHTML = '<tr class="no-data"><td colspan="6">Failed to load timesheets</td></tr>';
         }
     } catch (error) {
         console.error('Error loading pending timesheets:', error);
-        tbody.innerHTML = '<tr class="no-data"><td colspan="5">Error loading timesheets</td></tr>';
+        tbody.innerHTML = '<tr class="no-data"><td colspan="6">Error loading timesheets</td></tr>';
     }
 }
 
 // Load approved timesheets
 async function loadApprovedTimesheets() {
     const tbody = document.getElementById('approvedTimesheetsBody');
-    tbody.innerHTML = '<tr class="no-data"><td colspan="6">Loading...</td></tr>';
+    tbody.innerHTML = '<tr class="no-data"><td colspan="7">Loading...</td></tr>';
 
     try {
         const result = await window.timesheetAPI.getApprovedTimesheets(supervisorToken);
 
         if (result.success && result.timesheets) {
             if (result.timesheets.length === 0) {
-                tbody.innerHTML = '<tr class="no-data"><td colspan="6">No approved timesheets</td></tr>';
+                tbody.innerHTML = '<tr class="no-data"><td colspan="7">No approved timesheets</td></tr>';
             } else {
                 tbody.innerHTML = result.timesheets.map(ts => `
                     <tr>
+                        <td><input type="checkbox" class="timesheet-checkbox approved-checkbox" data-id="${ts.id}"></td>
                         <td>${escapeHtml(ts.employee_name)}</td>
                         <td>${escapeHtml(ts.pay_period)}</td>
                         <td>${formatDate(ts.submitted_at)}</td>
@@ -323,13 +326,14 @@ async function loadApprovedTimesheets() {
                         </td>
                     </tr>
                 `).join('');
+                updatePrintButtonVisibility('approved');
             }
         } else {
-            tbody.innerHTML = '<tr class="no-data"><td colspan="6">Failed to load timesheets</td></tr>';
+            tbody.innerHTML = '<tr class="no-data"><td colspan="7">Failed to load timesheets</td></tr>';
         }
     } catch (error) {
         console.error('Error loading approved timesheets:', error);
-        tbody.innerHTML = '<tr class="no-data"><td colspan="6">Error loading timesheets</td></tr>';
+        tbody.innerHTML = '<tr class="no-data"><td colspan="7">Error loading timesheets</td></tr>';
     }
 }
 
@@ -760,4 +764,257 @@ function calculateTotalHours(data) {
     const week1Total = data.week1 ? data.week1.reduce((sum, day) => sum + (day.total || 0), 0) : 0;
     const week2Total = data.week2 ? data.week2.reduce((sum, day) => sum + (day.total || 0), 0) : 0;
     return (week1Total + week2Total).toFixed(2);
+}
+
+// Print selected functionality
+function updatePrintButtonVisibility(tab) {
+    const checkboxes = document.querySelectorAll(`.${tab}-checkbox`);
+    const printBtn = document.getElementById(`printSelected${tab.charAt(0).toUpperCase() + tab.slice(1)}Btn`);
+
+    if (!printBtn) return;
+
+    // Add change listeners to all checkboxes
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', () => {
+            const checkedCount = document.querySelectorAll(`.${tab}-checkbox:checked`).length;
+            printBtn.style.display = checkedCount > 0 ? '' : 'none';
+        });
+    });
+}
+
+// Select all functionality
+document.addEventListener('DOMContentLoaded', () => {
+    // Select all pending
+    const selectAllPending = document.getElementById('selectAllPending');
+    if (selectAllPending) {
+        selectAllPending.addEventListener('change', (e) => {
+            document.querySelectorAll('.pending-checkbox').forEach(cb => {
+                cb.checked = e.target.checked;
+            });
+            const printBtn = document.getElementById('printSelectedPendingBtn');
+            if (printBtn) {
+                printBtn.style.display = e.target.checked && document.querySelectorAll('.pending-checkbox').length > 0 ? '' : 'none';
+            }
+        });
+    }
+
+    // Select all approved
+    const selectAllApproved = document.getElementById('selectAllApproved');
+    if (selectAllApproved) {
+        selectAllApproved.addEventListener('change', (e) => {
+            document.querySelectorAll('.approved-checkbox').forEach(cb => {
+                cb.checked = e.target.checked;
+            });
+            const printBtn = document.getElementById('printSelectedApprovedBtn');
+            if (printBtn) {
+                printBtn.style.display = e.target.checked && document.querySelectorAll('.approved-checkbox').length > 0 ? '' : 'none';
+            }
+        });
+    }
+
+    // Print selected pending button
+    const printSelectedPendingBtn = document.getElementById('printSelectedPendingBtn');
+    if (printSelectedPendingBtn) {
+        printSelectedPendingBtn.addEventListener('click', () => printSelectedTimesheets('pending'));
+    }
+
+    // Print selected approved button
+    const printSelectedApprovedBtn = document.getElementById('printSelectedApprovedBtn');
+    if (printSelectedApprovedBtn) {
+        printSelectedApprovedBtn.addEventListener('click', () => printSelectedTimesheets('approved'));
+    }
+});
+
+// Print selected timesheets
+async function printSelectedTimesheets(tab) {
+    const checkboxes = document.querySelectorAll(`.${tab}-checkbox:checked`);
+    const selectedIds = Array.from(checkboxes).map(cb => cb.dataset.id);
+
+    if (selectedIds.length === 0) {
+        alert('Please select at least one timesheet to print');
+        return;
+    }
+
+    // Create a printable container
+    const printContainer = document.createElement('div');
+    printContainer.style.display = 'none';
+    printContainer.id = 'printContainer';
+    document.body.appendChild(printContainer);
+
+    try {
+        // Fetch and render each timesheet
+        for (let i = 0; i < selectedIds.length; i++) {
+            const id = selectedIds[i];
+            const result = await window.timesheetAPI.getTimesheet(id, supervisorToken);
+
+            if (result.success && result.timesheet) {
+                const timesheetHtml = generatePrintableTimesheet(result.timesheet);
+
+                // Add page break after each timesheet except the last one
+                const pageBreak = i < selectedIds.length - 1 ? '<div style="page-break-after: always;"></div>' : '';
+
+                printContainer.innerHTML += timesheetHtml + pageBreak;
+            }
+        }
+
+        // Open print dialog
+        setTimeout(() => {
+            window.print();
+
+            // Clean up after printing
+            setTimeout(() => {
+                document.body.removeChild(printContainer);
+            }, 100);
+        }, 500);
+
+    } catch (error) {
+        console.error('Error printing selected timesheets:', error);
+        alert('Error loading timesheets for printing');
+        document.body.removeChild(printContainer);
+    }
+}
+
+// Generate printable HTML for a timesheet
+function generatePrintableTimesheet(timesheet) {
+    const data = timesheet.timesheet_data;
+
+    // Build week 1 rows
+    let week1Rows = '';
+    if (data.week1 && Array.isArray(data.week1)) {
+        week1Rows = data.week1.map(day => {
+            let hoursDisplay = '';
+            if (day.timePairs && day.timePairs.length > 0) {
+                hoursDisplay = day.timePairs.map(pair =>
+                    `${formatTime12Hour(pair.start)} - ${formatTime12Hour(pair.stop)}`
+                ).join('<br>');
+            }
+            if (day.hoursEntries && day.hoursEntries.length > 0) {
+                const hoursText = day.hoursEntries.map(entry => `${entry.hours}h - ${entry.description}`).join('<br>');
+                hoursDisplay = hoursDisplay ? hoursDisplay + '<br>' + hoursText : hoursText;
+            }
+            if (day.dayType === 'holiday') {
+                hoursDisplay = '<span>Holiday - Office Closed</span>';
+            } else if (day.dayType === 'called-off') {
+                hoursDisplay = '<span>Called Off</span>';
+            } else if (day.dayType === 'on-call' && hoursDisplay) {
+                hoursDisplay += '<br><span>(On Call)</span>';
+            }
+
+            return `
+                <tr>
+                    <td>${escapeHtml(day.date || '')}</td>
+                    <td>${hoursDisplay || '-'}</td>
+                    <td style="text-align: center;">${(day.total || 0).toFixed(2)}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // Calculate week 1 total
+    const week1Total = data.week1 ? data.week1.reduce((sum, day) => sum + (day.total || 0), 0) : 0;
+
+    // Build week 2 rows
+    let week2Rows = '';
+    if (data.week2 && Array.isArray(data.week2)) {
+        week2Rows = data.week2.map(day => {
+            let hoursDisplay = '';
+            if (day.timePairs && day.timePairs.length > 0) {
+                hoursDisplay = day.timePairs.map(pair =>
+                    `${formatTime12Hour(pair.start)} - ${formatTime12Hour(pair.stop)}`
+                ).join('<br>');
+            }
+            if (day.hoursEntries && day.hoursEntries.length > 0) {
+                const hoursText = day.hoursEntries.map(entry => `${entry.hours}h - ${entry.description}`).join('<br>');
+                hoursDisplay = hoursDisplay ? hoursDisplay + '<br>' + hoursText : hoursText;
+            }
+            if (day.dayType === 'holiday') {
+                hoursDisplay = '<span>Holiday - Office Closed</span>';
+            } else if (day.dayType === 'called-off') {
+                hoursDisplay = '<span>Called Off</span>';
+            } else if (day.dayType === 'on-call' && hoursDisplay) {
+                hoursDisplay += '<br><span>(On Call)</span>';
+            }
+
+            return `
+                <tr>
+                    <td>${escapeHtml(day.date || '')}</td>
+                    <td>${hoursDisplay || '-'}</td>
+                    <td style="text-align: center;">${(day.total || 0).toFixed(2)}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // Calculate totals
+    const week2Total = data.week2 ? data.week2.reduce((sum, day) => sum + (day.total || 0), 0) : 0;
+    const totalHours = week1Total + week2Total;
+    const regularHours = Math.min(totalHours, 80);
+    const overtimeHours = Math.max(0, totalHours - 80);
+
+    return `
+        <div class="printable-timesheet" style="font-family: 'Times New Roman', Times, serif; padding: 20px; max-width: 800px; margin: 0 auto;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h1 style="margin: 0;">Inter-Office Time Card</h1>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <div style="margin-bottom: 10px;"><strong>Name:</strong> ${escapeHtml(timesheet.employee_name)}</div>
+                <div><strong>Pay Period:</strong> ${escapeHtml(timesheet.pay_period)}</div>
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <thead>
+                    <tr style="background-color: #f0f0f0;">
+                        <th style="border: 1px solid #000; padding: 8px; text-align: left;">Date</th>
+                        <th style="border: 1px solid #000; padding: 8px; text-align: left;">Hours: from/to</th>
+                        <th style="border: 1px solid #000; padding: 8px; text-align: center;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${week1Rows}
+                    <tr style="background-color: #f9f9f9; font-weight: bold;">
+                        <td colspan="2" style="border: 1px solid #000; padding: 8px; text-align: right;">Week 1 Total:</td>
+                        <td style="border: 1px solid #000; padding: 8px; text-align: center;">${week1Total.toFixed(2)}</td>
+                    </tr>
+                    ${week2Rows}
+                    <tr style="background-color: #f9f9f9; font-weight: bold;">
+                        <td colspan="2" style="border: 1px solid #000; padding: 8px; text-align: right;">Week 2 Total:</td>
+                        <td style="border: 1px solid #000; padding: 8px; text-align: center;">${week2Total.toFixed(2)}</td>
+                    </tr>
+                    <tr style="background-color: #e0e0e0; font-weight: bold;">
+                        <td colspan="2" style="border: 1px solid #000; padding: 8px; text-align: right;">Total Hours:</td>
+                        <td style="border: 1px solid #000; padding: 8px; text-align: center;">${totalHours.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="border: 1px solid #000; padding: 8px; text-align: right;">Regular Hours:</td>
+                        <td style="border: 1px solid #000; padding: 8px; text-align: center;">${regularHours.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="border: 1px solid #000; padding: 8px; text-align: right;">Overtime Hours:</td>
+                        <td style="border: 1px solid #000; padding: 8px; text-align: center;">${overtimeHours.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="border: 1px solid #000; padding: 8px; text-align: right;">Personal Leave:</td>
+                        <td style="border: 1px solid #000; padding: 8px; text-align: center;">${(data.personalLeave || 0).toFixed(2)}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div style="margin-top: 40px;">
+                <div style="margin-bottom: 40px;">
+                    <div style="margin-bottom: 10px;">Employee Signature & Date</div>
+                    ${timesheet.employee_signature ? `<img src="${timesheet.employee_signature}" style="max-width: 200px; height: auto; display: block;">` : ''}
+                    <div style="border-bottom: 1px solid #000; width: 300px; margin-top: 5px;"></div>
+                    ${timesheet.employee_signature_date ? `<div style="margin-top: 5px;">${escapeHtml(timesheet.employee_signature_date)}</div>` : ''}
+                </div>
+
+                <div>
+                    <div style="margin-bottom: 10px;">Supervisor Signature & Date</div>
+                    ${timesheet.supervisor_signature ? `<img src="${timesheet.supervisor_signature}" style="max-width: 200px; height: auto; display: block;">` : ''}
+                    <div style="border-bottom: 1px solid #000; width: 300px; margin-top: 5px;"></div>
+                    ${timesheet.supervisor_signature_date ? `<div style="margin-top: 5px;">${escapeHtml(timesheet.supervisor_signature_date)}</div>` : ''}
+                </div>
+            </div>
+        </div>
+    `;
 }

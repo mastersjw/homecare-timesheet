@@ -168,6 +168,12 @@
     color: #333;
 }
 
+.tab-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
 /* Timesheets Table */
 .timesheets-table-container {
     background-color: white;

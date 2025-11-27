@@ -61,12 +61,16 @@
             <div id="pendingTab" class="tab-content active">
                 <div class="tab-header">
                     <h2>Pending Timesheets</h2>
-                    <button id="refreshPendingBtn" class="btn">Refresh</button>
+                    <div class="tab-actions">
+                        <button id="printSelectedPendingBtn" class="btn btn-primary" style="display: none;">Print Selected</button>
+                        <button id="refreshPendingBtn" class="btn">Refresh</button>
+                    </div>
                 </div>
                 <div id="pendingTimesheetsTable" class="timesheets-table-container">
                     <table class="timesheets-table">
                         <thead>
                             <tr>
+                                <th><input type="checkbox" id="selectAllPending"></th>
                                 <th>Employee Name</th>
                                 <th>Pay Period</th>
                                 <th>Submitted</th>
@@ -76,7 +80,7 @@
                         </thead>
                         <tbody id="pendingTimesheetsBody">
                             <tr class="no-data">
-                                <td colspan="5">Loading timesheets...</td>
+                                <td colspan="6">Loading timesheets...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -87,12 +91,16 @@
             <div id="approvedTab" class="tab-content">
                 <div class="tab-header">
                     <h2>Approved Timesheets</h2>
-                    <button id="refreshApprovedBtn" class="btn">Refresh</button>
+                    <div class="tab-actions">
+                        <button id="printSelectedApprovedBtn" class="btn btn-primary" style="display: none;">Print Selected</button>
+                        <button id="refreshApprovedBtn" class="btn">Refresh</button>
+                    </div>
                 </div>
                 <div id="approvedTimesheetsTable" class="timesheets-table-container">
                     <table class="timesheets-table">
                         <thead>
                             <tr>
+                                <th><input type="checkbox" id="selectAllApproved"></th>
                                 <th>Employee Name</th>
                                 <th>Pay Period</th>
                                 <th>Submitted</th>
@@ -103,7 +111,7 @@
                         </thead>
                         <tbody id="approvedTimesheetsBody">
                             <tr class="no-data">
-                                <td colspan="6">No approved timesheets</td>
+                                <td colspan="7">No approved timesheets</td>
                             </tr>
                         </tbody>
                     </table>
