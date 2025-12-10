@@ -1559,6 +1559,13 @@ document.getElementById('exportPdfBtn').addEventListener('click', async () => {
     // Add print class to body to apply print styles
     document.body.classList.add('print-mode');
 
+    // Explicitly hide the salary mode banner during export
+    const salaryBanner = document.getElementById('salaryModeBanner');
+    const originalBannerDisplay = salaryBanner ? salaryBanner.style.display : null;
+    if (salaryBanner) {
+        salaryBanner.style.display = 'none';
+    }
+
     try {
         const element = document.getElementById('timesheet');
 
@@ -1594,6 +1601,11 @@ document.getElementById('exportPdfBtn').addEventListener('click', async () => {
     } finally {
         // Remove print class
         document.body.classList.remove('print-mode');
+
+        // Restore salary mode banner display
+        if (salaryBanner && originalBannerDisplay !== null) {
+            salaryBanner.style.display = originalBannerDisplay;
+        }
     }
 });
 
